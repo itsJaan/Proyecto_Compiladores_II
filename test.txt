@@ -1,21 +1,19 @@
 package main
+
 import "fmt"
 
-func main()
-{
-    var a = "initial"
-    fmt.Println(a)
-    var b , c int = 1 , 2
+func main() {
 
-    fmt.Println(b,c)
+    var a [5]int
+    fmt.Println("emp:", a)
 
-    var t = true
-    fmt.Println(t)
+    a[4] = 100
+    fmt.Println("set:", a)
+    fmt.Println("get:", a[4])
 
-    var e int
-    fmt.Println(e)
+    fmt.Println("len:", len(a))
 
-    f := "apple"
 
-    fmt.Println(f)
+    a[1] = 5
+    fmt.Println("dcl:", b)
 }
