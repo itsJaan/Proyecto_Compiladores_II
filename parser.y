@@ -44,8 +44,9 @@ functions: function
          | function functions
          ;
 
-function: TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_LLAVE_A infunctions TK_LLAVE_C
+function: TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_BRACKET_A TK_BRACKET_C types TK_LLAVE_A infunctions TK_LLAVE_C
         | TK_FUNC TK_ID TK_PAR_A params TK_PAR_C types TK_LLAVE_A infunctions TK_LLAVE_C
+        | TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_LLAVE_A infunctions TK_LLAVE_C
         ;
 
 types: TK_INT
@@ -64,7 +65,8 @@ params_no_empty: param
       ;
 
 
-param: TK_ID types
+param: TK_ID TK_BRACKET_A TK_BRACKET_C types
+     |TK_ID types
      ;
 
 infunctions: /* E */
@@ -74,12 +76,15 @@ infunctions: /* E */
 infunction:  declaration
           |  statement
           |  assignment
+          |  comments
           ;
+comments: TK_MULTLINE_COMMENT
+        | TK_COMMENT
+        ;
 
 assignment: list_id TK_EQUAL list_assign_types
           | TK_ID TK_BRACKET_A arithmetic TK_BRACKET_C TK_EQUAL assign_types
           ;
-
 
 breakers: TK_CONTINUE
         | TK_BREAK
@@ -98,25 +103,27 @@ array: TK_VAR TK_ID array_type
      ;
 
 
-array_type: TK_BRACKET_A TK_LIT_INT TK_BRACKET_C types
+array_type: TK_BRACKET_A arithmetic TK_BRACKET_C types
 
 
 
 list_assign_types: assign_types
+                 | binary_operation
                  | assign_types TK_COMA list_assign_types
+                 | binary_operation TK_COMA list_assign_types
                  ;
 
 list_id: TK_ID
        | TK_ID TK_COMA list_id
        ;
+       
 
-assign_types:
-             TK_LIT_STRING
+assign_types:TK_LIT_STRING
             | TK_TRUE
             | TK_FALSE
             | arithmetic
             | TK_ID TK_BRACKET_A arithmetic TK_BRACKET_C
-            | TK_BRACKET_A TK_LIT_INT TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C
+            | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C
             ;
 
 arithmetic: op V
@@ -126,6 +133,7 @@ arithmetic: op V
 
 V: TK_MULT T X
  | TK_DIV T X
+ | TK_PORC T X
  | TK_PLUS arithmetic
  | TK_MINUS arithmetic
  | /* */
@@ -168,16 +176,22 @@ statement_else: TK_ELSE TK_IF condition_if TK_LLAVE_A infunctions TK_LLAVE_C
               | TK_ELSE TK_IF condition_if TK_LLAVE_A infunctions TK_LLAVE_C statement_else
               ;
 
-condition_if: assign_types rel_operator assign_types binary_op condition_if
-            | assign_types binary_op condition_if
+condition_if: assign_types rel_operator assign_types binary_operator condition_if
+            | assign_types binary_operator condition_if
             | assign_types
             | assign_types rel_operator assign_types
+            | TK_NOT bool
+            | TK_NOT bool binary_operator condition_if
             ;
-
+bool: TK_ID
+    | TK_FALSE
+    | TK_TRUE
+    ;
 statement_for: TK_FOR condition_for TK_LLAVE_A infunctions TK_LLAVE_C
 
 condition_for: condition_if
              | TK_ID TK_COLUMN_EQUAL assign_types TK_SEMICOLUMN condition_if TK_SEMICOLUMN TK_ID dec_inc 
+             |/* E */
              ;
 
 dec_inc: TK_PLUS_PLUS
@@ -192,9 +206,9 @@ rel_operator: TK_EQUAL TK_EQUAL
             | TK_GREATER_EQUAL
             ;
 
-binary_op: TK_AND
-         | TK_OR
-         ;
+binary_operator: TK_AND
+               | TK_OR
+               ;
 
 
 call_function: TK_ID TK_PAR_A params_call TK_PAR_C
@@ -202,8 +216,14 @@ call_function: TK_ID TK_PAR_A params_call TK_PAR_C
              ;
 
 params_call: assign_types
+           | binary_operation
            | assign_types TK_COMA list_assign_types 
+           | binary_operation TK_COMA list_assign_types
            | /* */
            ;
 
+binary_operation: assign_types rel_operator assign_types
+                | assign_types binary_operator assign_types
+                ;
+                
 %%

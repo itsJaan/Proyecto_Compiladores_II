@@ -1,19 +1,22 @@
 package main
-
+ 
 import "fmt"
-
+ 
+func BubbleSort(array[] int, size int)[]int {
+   for i:=0; i< size-1; i++ {
+      for j:=0; j < size-i-1; j++ {
+         if array[j] > array[j+1] {
+            array[j]  = array[j+1] 
+            array[j+1] = array[j]
+         }
+      }
+   }
+   return array
+}
+ 
 func main() {
-
-    var a [5]int
-    fmt.Println("emp:", a)
-
-    a[4] = 100
-    fmt.Println("set:", a)
-    fmt.Println("get:", a[4])
-
-    fmt.Println("len:", len(a))
-
-
-    a[1] = 5
-    fmt.Println("dcl:", b)
+ 
+   var size = 7 
+   array:= [size]int{11, 14, 3, 8, 18, 17, 43}
+   fmt.Println(BubbleSort(array, size))
 }
