@@ -135,6 +135,7 @@ list_assign_types: assign_types { Ids * tmp = new Ids("") ; tmp->addTypeToList($
                  | binary_operation { Ids * tmp = new Ids("") ; tmp->addTypeToList(2); }
                  | assign_types TK_COMA list_assign_types { Ids * tmp = new Ids("") ; tmp->addTypeToList($1); }
                  | binary_operation TK_COMA list_assign_types  { Ids * tmp = new Ids("") ; tmp->addTypeToList(2); }
+
                  ;
 
 list_id: TK_ID { $$ = new Ids($1); $$->addToList(); }
@@ -182,6 +183,7 @@ V: TK_MULT T X  {$$ = $2;
     Arith * tmp = new Arith(yylineno);
     tmp->addSign(2);
  }
+
  | /* */
  ;
 
@@ -280,7 +282,7 @@ rel_operator: TK_EQUAL TK_EQUAL { $$ = $1;}
 
 binary_operator: TK_AND { $$ = $1;}
                | TK_OR { $$ = $1;}
-               ;
+
 
 
 call_function: TK_ID TK_PAR_A params_call TK_PAR_C
@@ -293,6 +295,7 @@ params_call: assign_types
            | binary_operation TK_COMA list_assign_types
            | /* */
            ;
+
 
 binary_operation: assign_types rel_operator assign_types { BinaryOp * tmp = new BinaryOp($1, $3, yylineno, $2); 
                                                            tmp->evaluate();

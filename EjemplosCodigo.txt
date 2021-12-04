@@ -1,0 +1,121 @@
+package main
+ 
+import (
+    "fmt"
+    "math/rand"
+)
+ 
+func main() {
+ 
+    /*
+    Operadores básicos
+    */
+    a:= rand.Float32() * 100
+    b:= rand.Float32() * 100
+ 
+    fmt.Println("a = ", a)
+    fmt.Println("b = ", b)
+    fmt.Println("a+b = ", a+b)
+    fmt.Println("a-b = ", a-b)
+    fmt.Println("a*b = ", a*b)  
+    fmt.Println("a/b = ", a/b)
+    //fmt.Println("a%b = ", a%b)
+    fmt.Println("a>b = ", a>b)
+    fmt.Println("a<b = ", a<b)
+    fmt.Println("a>=b = ", a>=b)
+    fmt.Println("a<=b = ", a<=b)
+    fmt.Println("true&&true = ", true && false)
+ 
+}
+
+//////////////////////////////////////////////////////////////
+
+package main
+ 
+import (
+    "fmt"
+)
+ 
+func main() {
+ 
+    /*
+    Prueba con if
+    */
+    var a, b  = 5, 8
+    
+    if a%2 == 0 {
+        fmt.Println("a is even")
+    } else {
+        fmt.Println("a is odd")
+    }
+    
+    if b%4 == 0 {
+        fmt.Println("8 is divisible by 4")
+    }
+    num := 9
+    if  num < 0 {
+        fmt.Println(num, "is negative")
+    } else if num < 10 {
+        fmt.Println(num, "has 1 digit")
+    } else {
+        fmt.Println(num, "has multiple digits")
+    }
+}
+
+
+////////////////////////////////////////////////////////////
+
+package main
+ 
+import "fmt"
+ 
+func BubbleSort(array[] int, size int)[]int {
+   for i:=0; i< size-1; i++ {
+      for j:=0; j < size-i-1; j++ {
+         if array[j] > array[j+1] {
+            array[j]  = array[j+1] 
+            array[j+1] = array[j]
+         }
+      }
+   }
+   return array
+}
+ 
+func main() {
+ 
+   var size  = 7 
+   array:= [size]int{11, 14, 3, 8, 18, 17, 43}
+   fmt.Println(BubbleSort(array, size))
+}
+
+
+///////////////////////////////////////////////////////////
+
+package main
+ 
+import "fmt"
+ 
+func main() {
+ 
+    i := 1
+    for i <= 3 {
+        fmt.Println(i)
+        i = i + 1
+    }
+ 
+    for j := 7; j <= 9; j++ {
+        fmt.Println(j)
+    }
+ 
+    for {
+        fmt.Println("loop")
+        break
+    }
+ 
+    for n := 0; n <= 5; n++ {
+        if n%2 == 0 {
+            continue
+        }
+        fmt.Println(n)
+    }
+}
