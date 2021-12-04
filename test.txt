@@ -1,19 +1,12 @@
 package main
+import (
 
-import "fmt"
+   "fmt"
+
+)
 
 func main() {
 
-    var a [5]int
-    fmt.Println("emp:", a)
-
-    a[4] = 100
-    fmt.Println("set:", a)
-    fmt.Println("get:", a[4])
-
-    fmt.Println("len:", len(a))
-
-
-    a[1] = 5
-    fmt.Println("dcl:", b)
+   var h = "hola"
+   var f = "a" + "b" - h
 }
