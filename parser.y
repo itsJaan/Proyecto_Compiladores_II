@@ -22,6 +22,8 @@
     bool bool_t;
     char * string_t;
     Declaration * decl_t;
+    Function * func_t;
+    Parameter * param_t;
     Ids * id;
 }
 
@@ -37,32 +39,39 @@
 %token TK_COMMENT TK_MULTLINE_COMMENT 
 %token EOL
 
-%type <int_t> assign_types op types arithmetic X V T U list_assign_types
+%type <int_t> assign_types op types arithmetic X V T U list_assign_types params_call
 %type <decl_t> declaration
-%type <id> list_id
-%type <string_t> binary_operator rel_operator
+%type <id> list_id array
+%type <string_t> binary_operator rel_operator call_function
+%type <func_t> function import
+%type <param_t> param;
 %%
 
 
 uc: package import functions ;
 
-package: TK_PACKAGE TK_ID;
+package: TK_PACKAGE TK_ID ;
 
-import: TK_IMPORT TK_LIT_STRING
-      | TK_IMPORT TK_PAR_A list_lit_strings TK_PAR_C
+import: TK_IMPORT TK_LIT_STRING     {$$= new Function($2,0, yylineno); $$->addFunction();}
+      | TK_IMPORT TK_PAR_A list_lit_strings TK_PAR_C 
       ;
 
-list_lit_strings: TK_LIT_STRING
-                | TK_LIT_STRING list_lit_strings
+list_lit_strings: TK_LIT_STRING      {Function *tmp = new Function($1,0, yylineno); tmp->addFunction();}
+                | TK_LIT_STRING list_lit_strings {Function *tmp = new Function($1,0, yylineno); tmp->addFunction();}
                 ;
 
 functions: function
          | function functions
          ;
 
-function: TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_BRACKET_A TK_BRACKET_C types TK_LLAVE_A infunctions TK_LLAVE_C
-        | TK_FUNC TK_ID TK_PAR_A params TK_PAR_C types TK_LLAVE_A infunctions TK_LLAVE_C
-        | TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_LLAVE_A infunctions TK_LLAVE_C
+function: TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_BRACKET_A TK_BRACKET_C types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($2, $8, yylineno);
+                                                                                                                   $$->addFunction();}
+        | TK_FUNC TK_ID TK_PAR_A params TK_PAR_C types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($2, $6, yylineno);
+                                                                                          $$->addFunction();}
+        | TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($2,0, yylineno);
+                                                                                   $$->addFunction();
+        }//Program *tmp = new Program();
+        //                                                                           tmp->printLists();}
         ;
 
 types: TK_INT { $$ = 3; }
@@ -73,7 +82,7 @@ types: TK_INT { $$ = 3; }
 
 params: /* E */
       | param TK_COMA params_no_empty 
-      | param
+      | param                                               
       ;
 
 params_no_empty: param
@@ -81,8 +90,10 @@ params_no_empty: param
       ;
 
 
-param: TK_ID TK_BRACKET_A TK_BRACKET_C types
-     |TK_ID types
+param: TK_ID TK_BRACKET_A TK_BRACKET_C types {$$ = new Parameter($1 , $4);
+                                              $$->addParameter();} 
+     |TK_ID types {$$ = new Parameter($1 , $2);
+                   $$->addParameter();}
      ;
 
 infunctions: /* E */
@@ -97,7 +108,7 @@ infunction:  declaration
 comments: TK_MULTLINE_COMMENT
         | TK_COMMENT
         ;
-
+//VALIDAR ASSIGNACIONES
 assignment: list_id TK_EQUAL list_assign_types
           | TK_ID TK_BRACKET_A arithmetic TK_BRACKET_C TK_EQUAL assign_types
           ;
@@ -107,34 +118,34 @@ breakers: TK_CONTINUE
         | TK_RETURN assign_types
         ;
 
-declaration: TK_VAR list_id types { $$ = new Declaration($3, yylineno);
+declaration: TK_VAR list_id types { $$ = new Declaration($3, yylineno, false , 0);
                                     $$->addDeclaration();
                                   }
            | TK_VAR list_id TK_EQUAL list_assign_types {
-              $$ = new Declaration(0, yylineno);
+              $$ = new Declaration(0, yylineno, false , 0);
               $$->addDeclaration();
            }
            | list_id TK_COLUMN_EQUAL list_assign_types {
-              $$ = new Declaration(0, yylineno);
+              $$ = new Declaration(0, yylineno , false, 0);
               $$->addDeclaration();
            } 
            | breakers
-           | call_function
-           | array
+           | call_function   {Function * tmp = new Function("",0,yylineno); tmp->evaluateCall($1);}
+           | array           
            ;
 
-array: TK_VAR TK_ID array_type
+array: TK_VAR TK_ID array_type { $$ = new Ids($2); $$->addToList(); }
      ;
 
 
-array_type: TK_BRACKET_A arithmetic TK_BRACKET_C types
+array_type: TK_BRACKET_A arithmetic TK_BRACKET_C types { Ids * tmp = new Ids("") ; tmp->addTypeToList($4); }
 
 
 
 list_assign_types: assign_types { Ids * tmp = new Ids("") ; tmp->addTypeToList($1); }
-                 | binary_operation { Ids * tmp = new Ids("") ; tmp->addTypeToList(2); }
-                 | assign_types TK_COMA list_assign_types { Ids * tmp = new Ids("") ; tmp->addTypeToList($1); }
-                 | binary_operation TK_COMA list_assign_types  { Ids * tmp = new Ids("") ; tmp->addTypeToList(2); }
+                 | binary_operation { Ids * tmp = new Ids("") ; tmp->addTypeToList(2);}
+                 | assign_types TK_COMA list_assign_types { Ids * tmp = new Ids("") ; tmp->addTypeToList($1);}
+                 | binary_operation TK_COMA list_assign_types  { Ids * tmp = new Ids("") ; tmp->addTypeToList(2);}
 
                  ;
 
@@ -156,9 +167,7 @@ assign_types:
             | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C { $$ = $4; }
             ;
 
-arithmetic: op V { $$ = $1; 
-                   
-                 }
+arithmetic: op V {$$ = $1;}
           | TK_PAR_A arithmetic C V { $$ = $4; }
           ;
 
@@ -234,7 +243,7 @@ op: TK_LIT_INT {$$ = 3;
           Arith * tmp2 = new Arith(yylineno);
           tmp2->addOp(tmp->getType());
   }
-  | call_function
+  | call_function {Function * tmp = new Function("",0,yylineno); $$ = tmp->evaluateCall($1);}
   ;
 
 statement: statement_if
@@ -285,15 +294,15 @@ binary_operator: TK_AND { $$ = $1;}
 
 
 
-call_function: TK_ID TK_PAR_A params_call TK_PAR_C
-             | TK_ID TK_PUNTO TK_ID TK_PAR_A params_call TK_PAR_C
+call_function: TK_ID TK_PAR_A params_call TK_PAR_C    {$$=$1;}
+             | TK_ID TK_PUNTO TK_ID TK_PAR_A params_call TK_PAR_C //{$$=$1;}
              ;
 
-params_call: assign_types
-           | binary_operation
-           | assign_types TK_COMA list_assign_types 
-           | binary_operation TK_COMA list_assign_types
-           | /* */
+params_call: /* */                                       
+           | assign_types                         {CalledParam *tmp = new CalledParam($1, yylineno); tmp->addCalledParam();}               
+           | binary_operation                     {CalledParam *tmp = new CalledParam(2, yylineno); tmp->addCalledParam();}
+           | assign_types TK_COMA params_call     {CalledParam *tmp = new CalledParam($1, yylineno); tmp->addCalledParam();}     
+           | binary_operation TK_COMA params_call {CalledParam *tmp = new CalledParam(2, yylineno); tmp->addCalledParam();}
            ;
 
 

@@ -1,13 +1,24 @@
 package main
-
 import (
 
    "fmt"
+   "williamcrack"
 
 )
+func perrobravo1(esta int , mecagoenlaputa bool , x string) int{
+   fmt.Println("david puto")
+   return 1
+}
+func perrobravo() int{
+   fmt.Println("david puto")
+   return 1
+}
+
 
 func main() {
-
-   var h = "hola"
-   var f = "a" + "b" - h
+   var h = 1
+   var f = "a" + "b"
+   var t = true
+   var a = perrobravo1(h,t, fmt)
+   b:= perrobravo()
 }
