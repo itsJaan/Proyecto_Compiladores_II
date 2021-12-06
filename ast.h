@@ -6,20 +6,28 @@ using namespace std;
 
 enum type{
     STRING,
+    BOOL,
     INT,
-    FLOAT,
-    BOOL
+    FLOAT  
 };
 
+class Program{
+    public:
+        void printLists();
+};
 
 class Declaration{
     public:
-        Declaration(int type , int line){
+        Declaration(int type , int line , bool isArray , int size){
             this->type = type;
             this->line = line;
+            this->isArray = isArray;
+            this->size = size;
         }
         int type;
         int line;
+        bool isArray=false;
+        int size=0;
 
         bool evaluate(string key , int line);
         int addDeclaration();
@@ -61,4 +69,46 @@ class Arith{
         void addOp(int type);
         void addSign(int sign);
         void clearList();
+};
+
+class Function{
+    public:
+        Function(string name, int type, int line){
+            this->name = name;
+            this->type = type;
+            this->line = line;
+        }
+        string name;
+        int type;
+        int params;
+        int line;
+        
+        void addFunction();
+        int evaluateCall(string name);
+};
+class Parameter{
+    public:
+        Parameter(string name , int type){
+            this->name = name;
+            this->type = type;
+        }
+        string name;
+        int type;
+        void addParameter();
+};
+class CalledParam{
+    public:
+        CalledParam(int type, int line){
+            this->type= type;
+            this->line= line;
+        }
+        int type;
+        int line;
+        void addCalledParam();
+};
+
+struct FunctionS{
+    int type;
+    list<Parameter> params;
+    bool isImport=false;
 };
