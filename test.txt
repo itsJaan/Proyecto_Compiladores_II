@@ -19,6 +19,8 @@ func main() {
    var h = 1
    var f = "a" + "b"
    var t = true
-   var a = perrobravo1(h,t, fmt)
+   var a = perrobravo1(h,t, false)
    b:= perrobravo()
+   var s = 5+1
+   var j[s] int
 }

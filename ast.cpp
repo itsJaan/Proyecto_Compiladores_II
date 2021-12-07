@@ -2,7 +2,7 @@
 #include <iostream>
 
 
-map<string,int> variables;
+map<string,Decl> variables;
 map<string, FunctionS> functions;
 list<Ids> ids;
 list<Parameter> aux_params;
@@ -53,8 +53,10 @@ int Declaration::addDeclaration(){
         if(search != variables.end()){
             cout<<"Error: Variable '"<< id.name<< "' existente, Linea: "<<this->line<<endl;
         }else{
-            
-            variables[id.name] = cont;
+            Decl s;
+            s.type = cont;
+            s.size = this->size;
+            variables[id.name] = s;
             cout<<"Variable '"<< id.name<< "' Linea: "<<this->line<<endl;
         }
         it++;
@@ -68,8 +70,10 @@ int Declaration::addDeclaration(){
              if(search != variables.end()){
                  cout<<"Error: Variable '"<< id.name<< "' existente, Linea: "<<this->line<<endl;
              }else{
-                 
-                 variables[id.name] = this->type;
+                 Decl s;
+                 s.type = this->type;
+                 s.size = this->size;  
+                 variables[id.name] = s;
                  cout<<"Variable '"<< id.name<< "' Linea: "<<this->line<<endl;
              }
              it++;
@@ -87,6 +91,14 @@ bool Declaration::evaluate(string key , int line){
     }
     return true;
 };
+
+void Declaration::validArraySize(int type, int size){
+    if (type != 3 || size <= 0)
+    {
+       cout<<"Error: Tamaño de arreglo no valido, "<<  "Linea: "<<line<<endl;
+    }
+    
+}
 ///////////////////////////////////////////////////////////////////////////////////
 void Ids::addToList(){
     ids.push_back(this->name);
@@ -98,7 +110,16 @@ int Ids::getType(){
         cout<<"Error: Variable '" << this->name <<"' no existe\n";
         return 0;
     }
-    return search->second;
+    return search->second.type;
+};
+
+int Ids::getSize(){
+    auto search = variables.find(this->name);
+    if(search == variables.end()){
+        cout<<"Error: Variable '" << this->name <<"' no existe\n";
+        return 0;
+    }
+    return search->second.size;
 };
 
 void Ids::addTypeToList(int type){
@@ -157,7 +178,7 @@ void Arith::evaluate(){
    
     //cout<<"string: '"<< string_type <<endl;
     //cout<<"valid: '"<< validConcat <<endl;
-    if (bool_type > 0)
+    if (bool_type > 0 && sign_types.size() > 0)
     {
         cout<<"Error: No se pueden operar valores booleanos. Linea: " << this->line<<endl; 
     }else if(string_type > 0 && int_type > 0 || string_type > 0 && float_type > 0){
@@ -250,7 +271,10 @@ void Parameter::addParameter(){
     }
     
     cout<<"tipo: "<<this->type<<endl;
-    variables[this->name] = this->type;
+    Decl s;
+    s.type = this->type;
+    s.size = 0;
+    variables[this->name] = s;
     Parameter newpar = Parameter(this->name ,this->type);
     aux_params.push_back(newpar);
     cout<<"Variable '"<< this->name<<endl;

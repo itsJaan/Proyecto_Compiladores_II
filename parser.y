@@ -25,6 +25,7 @@
     Function * func_t;
     Parameter * param_t;
     Ids * id;
+    Decl * de_t;
 }
 
 %token TK_BREAK TK_FUNC TK_ELSE TK_IF TK_PACKAGE TK_CONTINUE TK_FOR TK_IMPORT TK_RETURN TK_VAR  TK_BOOL TK_INT TK_FLOAT TK_STRING 
@@ -39,9 +40,10 @@
 %token TK_COMMENT TK_MULTLINE_COMMENT 
 %token EOL
 
-%type <int_t> assign_types op types arithmetic X V T U list_assign_types params_call
-%type <decl_t> declaration
-%type <id> list_id array
+%type <int_t> assign_types  types   list_assign_types params_call 
+%type <decl_t> declaration array
+%type <de_t> array_type op X V T U arithmetic
+%type <id> list_id 
 %type <string_t> binary_operator rel_operator call_function
 %type <func_t> function import
 %type <param_t> param;
@@ -134,11 +136,28 @@ declaration: TK_VAR list_id types { $$ = new Declaration($3, yylineno, false , 0
            | array           
            ;
 
-array: TK_VAR TK_ID array_type { $$ = new Ids($2); $$->addToList(); }
+array: TK_VAR TK_ID array_type { 
+                                 
+                                 Ids * tmp = new Ids($2);
+                                 // printf("valor de: %d\n", $3->type);
+                                 tmp->addToList(); 
+                                 tmp->addTypeToList($3->type);
+                                 $$ = new Declaration($3->type, yylineno, true , $3->size); 
+                                 $$->addDeclaration(); }
      ;
 
 
-array_type: TK_BRACKET_A arithmetic TK_BRACKET_C types { Ids * tmp = new Ids("") ; tmp->addTypeToList($4); }
+array_type: TK_BRACKET_A arithmetic TK_BRACKET_C types { 
+                                                         Decl * s = new Decl();
+                                                         s->type =  $2->type; 
+                                                         s->size =  $2->size; 
+                                                         // printf("valor del entero3: %d\n", $2->size);
+                                                         printf("valor de tipo: %d\n", s->type);
+                                                         printf("valor de size: %d\n", s->size);
+                                                         Declaration * tmp = new Declaration(0, yylineno, false , 0);
+                                                         tmp->validArraySize($2->type, $2->size);
+                                                         $$ = s;
+                                                      }//Ids * tmp = new Ids("") ; tmp->addTypeToList($4); }
 
 
 
@@ -155,9 +174,8 @@ list_id: TK_ID { $$ = new Ids($1); $$->addToList(); }
        
 
 assign_types:
-             TK_TRUE {$$=2;}
-            | TK_FALSE {$$=2;}
-            | arithmetic { $$ = $1; 
+            
+            arithmetic { $$ = $1->type; 
                            Arith * tmp = new Arith(yylineno);
                            tmp->evaluate();
                          }
@@ -167,7 +185,7 @@ assign_types:
             | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C { $$ = $4; }
             ;
 
-arithmetic: op V {$$ = $1;}
+arithmetic: op V {$$ = $1; }
           | TK_PAR_A arithmetic C V { $$ = $4; }
           ;
 
@@ -226,24 +244,56 @@ U: TK_MULT T {$$ = $2;
 C: TK_PAR_C
  ;
 
-op: TK_LIT_INT {$$ = 3;
+op: TK_LIT_INT { Decl * s = new Decl();
+                s-> type = 3;
                 Arith * tmp = new Arith(yylineno);
                 tmp->addOp(3);
+               //  printf("valor del entero: %d\n", $1);
+                s->size = $1;
+                $$ = s;
                }
-  | TK_LIT_FLOAT {$$ = 4;
+  | TK_LIT_FLOAT {Decl * s = new Decl();
+                  s-> type = 4;
                   Arith * tmp = new Arith(yylineno);
-                  tmp->addOp(4);  
+                  tmp->addOp(4);
+                  s->size = 0;  
+                  $$ = s;
                  }
-  |TK_LIT_STRING {$$=1;
+  |TK_LIT_STRING {Decl * s = new Decl();
+                  s-> type = 1;
                   Arith * tmp = new Arith(yylineno);
                   tmp->addOp(1); 
+                  s->size = 0; 
+                  $$ = s;
                  }
-  | TK_ID {Ids  * tmp = new Ids($1);
-          $$ = tmp->getType();
+  | TK_ID { Decl * s = new Decl();
+          Ids  * tmp = new Ids($1);
+          s-> type = tmp->getType();
           Arith * tmp2 = new Arith(yylineno);
           tmp2->addOp(tmp->getType());
+         //  printf("valor del id: %d\n", tmp->getSize());
+          s->size = s->type == 3 ? 1 : 0; 
+          $$ = s;
   }
-  | call_function {Function * tmp = new Function("",0,yylineno); $$ = tmp->evaluateCall($1);}
+  | TK_TRUE {Decl * s = new Decl();
+            s-> type = 2;
+          Arith * tmp2 = new Arith(yylineno);
+          tmp2->addOp(2);
+          s->size = 0; 
+          $$ = s;
+  }
+  | TK_FALSE {Decl * s = new Decl();
+            s-> type = 2;
+          Arith * tmp2 = new Arith(yylineno);
+          tmp2->addOp(2);  
+          s->size = 0; 
+         $$ = s;
+  }
+  
+  | call_function {Decl * s = new Decl(); Function * tmp = new Function("",0,yylineno);  
+                  s-> type = tmp->evaluateCall($1);
+                   s->size = 0; 
+                   $$ = s;}
   ;
 
 statement: statement_if
