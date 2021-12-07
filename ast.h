@@ -30,6 +30,7 @@ class Declaration{
         int size=0;
 
         bool evaluate(string key , int line);
+        void validArraySize(int type, int size); // verificar si el tipo es int y si es menor o igual a 0
         int addDeclaration();
 };
 
@@ -41,6 +42,7 @@ class Ids{
         string name;
         void addToList();
         int getType();
+        int getSize();
         void addTypeToList(int type);
 };
 
@@ -112,3 +114,9 @@ struct FunctionS{
     list<Parameter> params;
     bool isImport=false;
 };
+
+struct Decl{
+    int type;
+    int size;
+};
+
