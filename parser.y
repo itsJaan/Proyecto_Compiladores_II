@@ -120,7 +120,9 @@ comments: TK_MULTLINE_COMMENT
         | TK_COMMENT
         ;
 //VALIDAR ASSIGNACIONES
-assignment: list_id TK_EQUAL list_assign_types  {$$ = new Assignment(yylineno); $$->evaluateAssignment();}
+assignment: list_id TK_EQUAL list_assign_types  {$$ = new Assignment(yylineno); $$->evaluateAssignment();
+                                                 Array * arr = new Array(yylineno); arr->clearArrayValues();
+                                                }
           | TK_ID TK_BRACKET_A arithmetic TK_BRACKET_C TK_EQUAL assign_types {$$ = new Assignment(yylineno); $$->evaluateAssignment();}
           | dec_inc 
           ;
@@ -134,10 +136,12 @@ declaration: TK_VAR list_id types { $$ = new Declaration($3, yylineno, false , 0
                                     $$->addDeclaration();
                                   }
            | TK_VAR list_id TK_EQUAL list_assign_types {
+              Array * arr = new Array(yylineno); arr->clearArrayValues();
               $$ = new Declaration(0, yylineno, false , 0);
               $$->addDeclaration();
            }
            | list_id TK_COLUMN_EQUAL list_assign_types {
+              Array * arr = new Array(yylineno); arr->clearArrayValues();
               $$ = new Declaration(0, yylineno , false, 0);
               $$->addDeclaration();
            } 
@@ -171,10 +175,10 @@ array_type: TK_BRACKET_A arithmetic TK_BRACKET_C types {
 
 
 
-list_assign_types: assign_types { Ids * tmp = new Ids("") ; tmp->addTypeToList($1); }
-                 | binary_operation { Ids * tmp = new Ids("") ; tmp->addTypeToList(2);}
-                 | assign_types TK_COMA list_assign_types { Ids * tmp = new Ids("") ; tmp->addTypeToList($1);}
-                 | binary_operation TK_COMA list_assign_types  { Ids * tmp = new Ids("") ; tmp->addTypeToList(2);}
+list_assign_types: assign_types { Ids * tmp = new Ids("") ; tmp->addTypeToList($1);  Array * arr = new Array(yylineno); arr->newArrayValue();}
+                 | binary_operation { Ids * tmp = new Ids("") ; tmp->addTypeToList(2); Array * arr = new Array(yylineno); arr->newArrayValue();}
+                 | assign_types TK_COMA list_assign_types { Ids * tmp = new Ids("") ; tmp->addTypeToList($1); Array * arr = new Array(yylineno); arr->newArrayValue();}
+                 | binary_operation TK_COMA list_assign_types  { Ids * tmp = new Ids("") ; tmp->addTypeToList(2); Array * arr = new Array(yylineno); arr->newArrayValue();}
 
                  ;
 
@@ -192,7 +196,7 @@ assign_types:
             | TK_ID TK_BRACKET_A arithmetic TK_BRACKET_C {Ids  * tmp = new Ids($1);
                                                           $$ = tmp->getType();
                                                         }
-            | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C { $$ = $4 ; Assignment *tmp = new Assignment(yylineno); tmp->evaluateArray($4, $2->type); }
+            | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C { $$ = $4 ; Assignment *tmp = new Assignment(yylineno); tmp->evaluateArray($4, $2->size, $2->value); }
             ;
 
 arithmetic: op V {$$ = $1;}
@@ -258,8 +262,9 @@ op: TK_LIT_INT { Decl * s = new Decl();
                 s-> type = 3;
                 Arith * tmp = new Arith(yylineno);
                 tmp->addOp(3);
-               //  printf("valor del entero: %d\n", $1);
-                s->size = $1;
+               //   printf("valor del entero: %d\n", $1);
+                s->size = 3;
+                s->value = $1;
                 $$ = s;
                }
   | TK_LIT_FLOAT {Decl * s = new Decl();
@@ -282,7 +287,7 @@ op: TK_LIT_INT { Decl * s = new Decl();
           Arith * tmp2 = new Arith(yylineno);
           tmp2->addOp(s->type);
          //  printf("valor del id: %d\n", tmp->getSize());
-          s->size = s->type == 3 ? 1 : 0; 
+          s->size = s->type == 3 ? 3 : 0; 
           $$ = s;
   }
   | TK_TRUE {Decl * s = new Decl();

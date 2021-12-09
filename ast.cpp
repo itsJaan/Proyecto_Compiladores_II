@@ -13,7 +13,7 @@ list<int> sign_types;
 int cont_params = 0;
 void clearIdList();
 int countParams();
-
+int arrayValuesCont = 0;// para validar el tamaño del arreglo
 int actualFuncType = 0;
 int inFor=false;
 
@@ -33,7 +33,7 @@ void pushContext(){
     c->variables = variables;
     c->prev = rootContext;
     rootContext = c;
-    cout<<"Context Pushed\n";
+    // cout<<"Context Pushed\n";
 };
 
 void popContext(){
@@ -42,7 +42,7 @@ void popContext(){
         free(rootContext);
         rootContext = previous;
     }
-    cout<<"Context Popped\n";
+    // cout<<"Context Popped\n";
 };
 
 type getTypeByIndexPosition(int i){
@@ -53,15 +53,15 @@ type getTypeByIndexPosition(int i){
 
 void Program::printLists(){
     auto iter = variables.begin();
-    cout<<"Variables:\n";
+    // cout<<"Variables:\n";
     while (iter != variables.end()) {
-        cout<<"["<<iter->first<<"]\n";
+        // cout<<"["<<iter->first<<"]\n";
         ++iter;
     }
     auto its = functions.begin();
-    cout<<"Funciones:\n";
+    // cout<<"Funciones:\n";
     while (its != functions.end()) {
-        cout<<"["<<its->first<<"]\n";
+        // cout<<"["<<its->first<<"]\n";
         ++its;
     }
 };
@@ -112,7 +112,7 @@ int Declaration::addDeclaration(){
                     s.type = cont;
                     s.size = this->size;
                     rootContext->variables[id.name] = s;
-                    cout<<"Variable '"<< id.name<< "' Linea: "<<this->line<<endl;
+                    // cout<<"Variable '"<< id.name<< "' Linea: "<<this->line<<endl;
                 }
             }else{
                 cout<<"Error: Variable '"<< id.name<< "' usa el mismo nombre que una funcion, Linea: "<<this->line<<endl;
@@ -135,7 +135,7 @@ int Declaration::addDeclaration(){
                     s.type = this->type;
                     s.size = this->size;  
                     rootContext->variables[id.name] = s;
-                    cout<<"Variable '"<< id.name<< "' Linea: "<<this->line<<endl;
+                    // cout<<"Variable '"<< id.name<< "' Linea: "<<this->line<<endl;
                 }
             }else{
                 cout<<"Error: Variable '"<< id.name<< "' usa el mismo nombre que una funcion, Linea: "<<this->line<<endl;
@@ -232,10 +232,20 @@ void Assignment::evaluateIncreDecre(string name){
     }
 };
 
-void Assignment::evaluateArray(int type, int size){
+void Assignment::evaluateArray(int type, int size, int value){
     list<int>::iterator its= id_types.begin();
+    //arrayValuesCont--;
+    // cout<<"Error: tipo, "<< size <<" Linea: "<<this->line<<endl;
+    // cout<<"Error: tamaño value, "<< value <<" Linea: "<<this->line<<endl;
+    // cout<<"Error: tamaño arreglo, "<< arrayValuesCont <<" Linea: "<<this->line<<endl;
     if(size!= 3){
-        cout<<"Error: Tamaño de arreglo no valido, "<<  "Linea: "<<line<<endl;
+        cout<<"Error: Se esparaba un int en el tamaño del arreglo, "<<  "Linea: "<<line<<endl;
+        id_types.clear();
+        arrayValuesCont = 0;
+        return;
+    }else if( value != arrayValuesCont){
+        cout<<"Error: Cantidad de valores en el arreglo no validos, "<<  "Linea: "<<line<<endl;
+        arrayValuesCont = 0;
         id_types.clear();
         return;
     }
@@ -244,10 +254,12 @@ void Assignment::evaluateArray(int type, int size){
         if(newtype!= type){
             cout<<"Error: Tipos en asignacion incompatibles,  Linea: "<<this->line<<endl;
             id_types.clear();
+            arrayValuesCont = 0;
             return;
         }
         its++;
     }
+    arrayValuesCont = 0;
     id_types.clear();
 }
 
@@ -277,20 +289,20 @@ void BinaryOp::evaluate(){
     
     if(this->right != 0){
         if(this->left ==3 && this->right==4 || this->left ==4 && this->right==3){
-                cout<<"Condicion if Correcta \n";
+                // cout<<"Condicion if Correcta \n";
                 return;
         }
         else if( this->left != this->right){
             cout<<"Error: operación invalida. Tipos incompatibles. Linea: " << this->line<<endl;
             return;   
         }
-        cout<<"Condicion if Correcta \n";
+        // cout<<"Condicion if Correcta \n";
     }else{
         if(this->left != 2){
             cout<<"Error: operación invalida. Se esperaba un tipo Bool. Linea: "<<this->line<<endl;
             return;
         }
-        cout<<"Condicion if Correcta \n";
+        // cout<<"Condicion if Correcta \n";
     }
 };
 
@@ -381,7 +393,7 @@ void Function::addFunction(){
     tmp.type = this->type;
 
     functions[this->name] = tmp;
-    cout<<"Funcion '"<< this->name<< "' Linea: "<<this->line<<endl;
+    // cout<<"Funcion '"<< this->name<< "' Linea: "<<this->line<<endl;
     cont_params=0;
     aux_params.clear();
     clearIdList();
@@ -446,7 +458,7 @@ void Parameter::addParameter(){
             rootContext->variables[this->name] = s;
             Parameter newpar = Parameter(this->name ,this->type);
             aux_params.push_back(newpar);
-            cout<<"Variable '"<< this->name<<endl;
+            // cout<<"Variable '"<< this->name<<endl;
         }
     }else{
         cout<<"Error: Variable '"<< this->name<< "' usa el mismo nombre que una funcion"<<endl;
@@ -495,4 +507,15 @@ Decl searchVariableType(string key, ContextStack * actualContext){
     cout<<"Error: Variable '"<< key<< "' no existe"<<endl;
     Decl tmp;
     return tmp;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+
+void Array::newArrayValue(){
+    arrayValuesCont++;
+}
+
+void Array::clearArrayValues(){
+    arrayValuesCont = 0;
 }

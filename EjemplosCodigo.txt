@@ -10,9 +10,9 @@ func main() {
     /*
     Operadores básicos
     */
-    a:= rand.Float32() * 100
-    b:= rand.Float32() * 100
- 
+    a:= 40.0
+    b:= 5
+   
     fmt.Println("a = ", a)
     fmt.Println("b = ", b)
     fmt.Println("a+b = ", a+b)
@@ -82,9 +82,8 @@ func BubbleSort(array[] int, size int)[]int {
 }
  
 func main() {
- 
-   var size  = 7 
-   array:= [size]int{11, 14, 3, 8, 18, 17, 43}
+   var size = 7
+   array:= [3]int{1,2,3}
    fmt.Println(BubbleSort(array, size))
 }
 

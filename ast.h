@@ -49,7 +49,7 @@ class Assignment{
         int line;
         void evaluateAssignment();
         void evaluateIncreDecre(string name);
-        void evaluateArray(int type, int size);
+        void evaluateArray(int type, int size, int value);
 };
 
 class Ids{
@@ -135,5 +135,16 @@ struct FunctionS{
 struct Decl{
     int type;
     int size;
+    int value;
 };
 
+
+class Array{
+    public:
+        Array(int line){
+            this->line= line;
+        }
+        int line;
+        void newArrayValue();
+        void clearArrayValues();
+};
