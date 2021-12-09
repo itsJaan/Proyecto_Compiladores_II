@@ -1,26 +1,29 @@
 package main
-import (
-
-   "fmt"
-   "williamcrack"
-
-)
-func perrobravo1(esta int , mecagoenlaputa bool , x string) int{
-   fmt.Println("david puto")
-   return 1
-}
-func perrobravo() int{
-   fmt.Println("david puto")
-   return 1
-}
-
-
+ 
+import "fmt"
+ 
 func main() {
-   var h = 1
-   var f = "a" + "b"
-   var t = true
-   var a = perrobravo1(h,t, false)
-   b:= perrobravo()
-   var s = 5+1
-   var j[s] int
+ 
+    i := 1
+    for i <= 3 {
+        fmt.Println(i)
+        i = i + 1
+    }
+ 
+    for j := 7; j <= 9; j++ {
+        fmt.Println(j)
+    }
+ 
+    for {
+        fmt.Println("loop")
+        break
+    }
+ 
+    for n := 0; n <= 5; n++ {
+        if n%2 == 0 {
+            continue
+        }
+        fmt.Println(n)
+    }
+    
 }

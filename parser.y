@@ -22,6 +22,7 @@
     bool bool_t;
     char * string_t;
     Declaration * decl_t;
+    Assignment  * assign_t;
     Function * func_t;
     Parameter * param_t;
     Ids * id;
@@ -40,11 +41,12 @@
 %token TK_COMMENT TK_MULTLINE_COMMENT 
 %token EOL
 
-%type <int_t> assign_types  types   list_assign_types params_call 
-%type <decl_t> declaration array
+%type <int_t> assign_types n_types types list_assign_types params_call bool
+%type <decl_t> declaration array tk_id
+%type <assign_t> assignment dec_inc 
 %type <de_t> array_type op X V T U arithmetic
 %type <id> list_id 
-%type <string_t> binary_operator rel_operator call_function
+%type <string_t> binary_operator rel_operator call_function func_id
 %type <func_t> function import
 %type <param_t> param;
 %%
@@ -54,35 +56,42 @@ uc: package import functions ;
 
 package: TK_PACKAGE TK_ID ;
 
-import: TK_IMPORT TK_LIT_STRING     {$$= new Function($2,0, yylineno); $$->addFunction();}
+import: TK_IMPORT TK_LIT_STRING     { Program *tmp = new Program(); tmp->ProgramPushContext(); $$= new Function($2,0, yylineno); $$->addFunction();}
       | TK_IMPORT TK_PAR_A list_lit_strings TK_PAR_C 
       ;
 
-list_lit_strings: TK_LIT_STRING      {Function *tmp = new Function($1,0, yylineno); tmp->addFunction();}
-                | TK_LIT_STRING list_lit_strings {Function *tmp = new Function($1,0, yylineno); tmp->addFunction();}
+list_lit_strings: TK_LIT_STRING      {Program *tmp1 = new Program(); tmp1->ProgramPushContext(); Function *tmp = new Function($1,0, yylineno); tmp->addFunction();}
+                | TK_LIT_STRING list_lit_strings {Program *tmp1 = new Program(); tmp1->ProgramPushContext(); Function *tmp = new Function($1,0, yylineno); tmp->addFunction();}
                 ;
 
-functions: function
-         | function functions
+functions: function 
+         | function functions 
          ;
 
-function: TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_BRACKET_A TK_BRACKET_C types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($2, $8, yylineno);
+function: func_id TK_PAR_A params TK_PAR_C TK_BRACKET_A TK_BRACKET_C n_types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($1, $7, yylineno);
                                                                                                                    $$->addFunction();}
-        | TK_FUNC TK_ID TK_PAR_A params TK_PAR_C types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($2, $6, yylineno);
-                                                                                          $$->addFunction();}
-        | TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($2,0, yylineno);
-                                                                                   $$->addFunction();
-        }//Program *tmp = new Program();
-        //                                                                           tmp->printLists();}
+        | func_id TK_PAR_A params TK_PAR_C n_types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($1, $5, yylineno);
+                                                                                          $$->addFunction();
+                                                                                          }// Program *tmp = new Program();
+                                                                                          // tmp->printLists();}
+        /* | TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($2,0, yylineno);
+                                                                                    $$->addFunction();
+                                                                                   } */
         ;
+func_id:TK_FUNC TK_ID {$$= $2; Program *tmp = new Program(); tmp->ProgramPushContext();}
+            ;
+n_types : types  { $$ = $1; Program *tmp = new Program(); tmp->saveFuncType($1);}
+        | /* E */{ $$ = 0;}
+        ; 
 
-types: TK_INT { $$ = 3; }
-     | TK_FLOAT {$$ = 4;}
-     | TK_STRING {$$ = 1;}
-     | TK_BOOL {$$ = 2;}
+
+types: TK_STRING {$$ = 1;}
+     | TK_BOOL   {$$ = 2;}
+     | TK_INT    {$$ = 3;}
+     | TK_FLOAT  {$$ = 4;}
      ;
 
-params: /* E */
+params: /* E */ 
       | param TK_COMA params_no_empty 
       | param                                               
       ;
@@ -99,10 +108,10 @@ param: TK_ID TK_BRACKET_A TK_BRACKET_C types {$$ = new Parameter($1 , $4);
      ;
 
 infunctions: /* E */
-           | infunction infunctions
+           | infunction infunctions 
            ;
 
-infunction:  declaration
+infunction:  declaration 
           |  statement
           |  assignment
           |  comments
@@ -111,13 +120,14 @@ comments: TK_MULTLINE_COMMENT
         | TK_COMMENT
         ;
 //VALIDAR ASSIGNACIONES
-assignment: list_id TK_EQUAL list_assign_types
-          | TK_ID TK_BRACKET_A arithmetic TK_BRACKET_C TK_EQUAL assign_types
+assignment: list_id TK_EQUAL list_assign_types  {$$ = new Assignment(yylineno); $$->evaluateAssignment();}
+          | TK_ID TK_BRACKET_A arithmetic TK_BRACKET_C TK_EQUAL assign_types {$$ = new Assignment(yylineno); $$->evaluateAssignment();}
+          | dec_inc 
           ;
 
-breakers: TK_CONTINUE
-        | TK_BREAK
-        | TK_RETURN assign_types
+breakers: TK_CONTINUE            {Declaration *tmp  = new Declaration(0,yylineno,false, 0); tmp->evaluateContinue();} 
+        | TK_BREAK               {Declaration *tmp  = new Declaration(0,yylineno,false, 0); tmp->evaluateBreak();} 
+        | TK_RETURN assign_types {Declaration *tmp  = new Declaration(0,yylineno,false, 0); tmp->evaluateReturn($2);}
         ;
 
 declaration: TK_VAR list_id types { $$ = new Declaration($3, yylineno, false , 0);
@@ -152,8 +162,8 @@ array_type: TK_BRACKET_A arithmetic TK_BRACKET_C types {
                                                          s->type =  $2->type; 
                                                          s->size =  $2->size; 
                                                          // printf("valor del entero3: %d\n", $2->size);
-                                                         printf("valor de tipo: %d\n", s->type);
-                                                         printf("valor de size: %d\n", s->size);
+                                                         // printf("valor de tipo: %d\n", s->type);
+                                                         // printf("valor de size: %d\n", s->size);
                                                          Declaration * tmp = new Declaration(0, yylineno, false , 0);
                                                          tmp->validArraySize($2->type, $2->size);
                                                          $$ = s;
@@ -182,11 +192,11 @@ assign_types:
             | TK_ID TK_BRACKET_A arithmetic TK_BRACKET_C {Ids  * tmp = new Ids($1);
                                                           $$ = tmp->getType();
                                                         }
-            | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C { $$ = $4; }
+            | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C { $$ = $4 ; Assignment *tmp = new Assignment(yylineno); tmp->evaluateArray($4, $2->type); }
             ;
 
-arithmetic: op V {$$ = $1; }
-          | TK_PAR_A arithmetic C V { $$ = $4; }
+arithmetic: op V {$$ = $1;}
+          | TK_PAR_A arithmetic C V { $$ = $4;}
           ;
 
 
@@ -270,7 +280,7 @@ op: TK_LIT_INT { Decl * s = new Decl();
           Ids  * tmp = new Ids($1);
           s-> type = tmp->getType();
           Arith * tmp2 = new Arith(yylineno);
-          tmp2->addOp(tmp->getType());
+          tmp2->addOp(s->type);
          //  printf("valor del id: %d\n", tmp->getSize());
           s->size = s->type == 3 ? 1 : 0; 
           $$ = s;
@@ -300,35 +310,45 @@ statement: statement_if
          | statement_for
          ;
 
-statement_if: TK_IF condition_if TK_LLAVE_A infunctions TK_LLAVE_C
-            | TK_IF condition_if TK_LLAVE_A infunctions TK_LLAVE_C statement_else
+statement_if: tk_if condition_if TK_LLAVE_A infunctions llave_c              
+            | tk_if condition_if TK_LLAVE_A infunctions llave_c statement_else   
             ;
+llave_c: TK_LLAVE_C {Program * tmp2 = new Program(); tmp2->ProgramPopContext();}
+       ;
 
-statement_else: TK_ELSE TK_IF condition_if TK_LLAVE_A infunctions TK_LLAVE_C 
-              | TK_ELSE TK_LLAVE_A infunctions TK_LLAVE_C
-              | TK_ELSE TK_IF condition_if TK_LLAVE_A infunctions TK_LLAVE_C statement_else
+statement_else: tk_else TK_IF condition_if TK_LLAVE_A infunctions llave_c 
+              | tk_else TK_LLAVE_A infunctions llave_c   
+              | tk_else TK_IF condition_if TK_LLAVE_A infunctions llave_c statement_else
               ;
-
-condition_if: assign_types rel_operator assign_types binary_operator condition_if
-            | assign_types binary_operator condition_if
-            | assign_types
-            | assign_types rel_operator assign_types
-            | TK_NOT bool
-            | TK_NOT bool binary_operator condition_if
+tk_if : TK_IF {Program * tmp2 = new Program(); tmp2->ProgramPushContext();}
+      ;
+tk_else:TK_ELSE {Program * tmp2 = new Program(); tmp2->ProgramPushContext();}
+       ;
+condition_if: assign_types rel_operator assign_types binary_operator condition_if {BinaryOp * tmp  = new BinaryOp($1,$3, yylineno); tmp->evaluate();}
+            | assign_types binary_operator condition_if                           {BinaryOp * tmp  = new BinaryOp($1,0, yylineno); tmp->evaluate();}
+            | assign_types                                                        {BinaryOp * tmp  = new BinaryOp($1,0, yylineno); tmp->evaluate(); }
+            | assign_types rel_operator assign_types                              {BinaryOp * tmp  = new BinaryOp($1,$3, yylineno); tmp->evaluate();}
+            | TK_NOT bool                                                         {BinaryOp * tmp  = new BinaryOp($2,0, yylineno); tmp->evaluate(); }
+            | TK_NOT bool binary_operator condition_if                            {BinaryOp * tmp  = new BinaryOp($2,0, yylineno); tmp->evaluate();}
             ;
-bool: TK_ID
-    | TK_FALSE
-    | TK_TRUE
+bool: TK_ID    {Ids * tmp = new Ids($1); $$ = tmp->getType(); }
+    | TK_FALSE {$$ = 2;}
+    | TK_TRUE  {$$ = 2;}
     ;
-statement_for: TK_FOR condition_for TK_LLAVE_A infunctions TK_LLAVE_C
+statement_for: tk_for condition_for TK_LLAVE_A infunctions llave_c {Program * tmp2 = new Program(); tmp2->exitingFor();}
 
 condition_for: condition_if
-             | TK_ID TK_COLUMN_EQUAL assign_types TK_SEMICOLUMN condition_if TK_SEMICOLUMN TK_ID dec_inc 
+             | tk_id TK_SEMICOLUMN condition_if TK_SEMICOLUMN  dec_inc 
              |/* E */
              ;
+tk_for: TK_FOR {Program * tmp2 = new Program(); tmp2->ProgramPushContext(); tmp2->enteringFor();}
+      ;
+tk_id: TK_ID TK_COLUMN_EQUAL assign_types {Ids *id = new Ids($1); id->addToList();id->addTypeToList($3);
+                                           $$ = new Declaration(0, yylineno , false, 0); $$->addDeclaration();}
+     ;
 
-dec_inc: TK_PLUS_PLUS
-       | TK_MINUS_MINUS
+dec_inc: TK_ID TK_PLUS_PLUS {$$ = new Assignment(yylineno); $$->evaluateIncreDecre($1);}
+       | TK_ID TK_MINUS_MINUS {$$ = new Assignment(yylineno); $$->evaluateIncreDecre($1);}
        ;
 
 rel_operator: TK_EQUAL TK_EQUAL { $$ = $1;}
@@ -345,7 +365,7 @@ binary_operator: TK_AND { $$ = $1;}
 
 
 call_function: TK_ID TK_PAR_A params_call TK_PAR_C    {$$=$1;}
-             | TK_ID TK_PUNTO TK_ID TK_PAR_A params_call TK_PAR_C //{$$=$1;}
+             | TK_ID TK_PUNTO TK_ID TK_PAR_A params_call TK_PAR_C   //{$$=$1;}
              ;
 
 params_call: /* */                                       
@@ -356,10 +376,10 @@ params_call: /* */
            ;
 
 
-binary_operation: assign_types rel_operator assign_types { BinaryOp * tmp = new BinaryOp($1, $3, yylineno, $2); 
+binary_operation: assign_types rel_operator assign_types { BinaryOp * tmp = new BinaryOp($1, $3, yylineno); 
                                                            tmp->evaluate();
                                                          }
-                | assign_types binary_operator assign_types { BinaryOp * tmp = new BinaryOp($1, $3, yylineno, $2);
+                | assign_types binary_operator assign_types { BinaryOp * tmp = new BinaryOp($1, $3, yylineno);
                                                               tmp->evaluate();
                                                             }
                 ;
