@@ -14,6 +14,11 @@ enum type{
 class Program{
     public:
         void printLists();
+        void ProgramPushContext();
+        void ProgramPopContext();
+        void saveFuncType(int type);
+        void enteringFor();
+        void exitingFor();
 };
 
 class Declaration{
@@ -32,6 +37,19 @@ class Declaration{
         bool evaluate(string key , int line);
         void validArraySize(int type, int size); // verificar si el tipo es int y si es menor o igual a 0
         int addDeclaration();
+        void evaluateReturn(int type);
+        void evaluateBreak();
+        void evaluateContinue();
+};
+class Assignment{
+    public:
+        Assignment(int line){
+            this->line = line;
+        } 
+        int line;
+        void evaluateAssignment();
+        void evaluateIncreDecre(string name);
+        void evaluateArray(int type, int size);
 };
 
 class Ids{
@@ -48,16 +66,14 @@ class Ids{
 
 class BinaryOp{
     public:
-        BinaryOp(int left, int right, int line, string op){
+        BinaryOp(int left, int right, int line){
             this->left = left;
             this->right = right;
             this->line = line;
-            this->op = op;
         }
         int left;
         int right;
         int line;
-        string op;
         void evaluate();
 };
 
@@ -87,6 +103,7 @@ class Function{
         
         void addFunction();
         int evaluateCall(string name);
+        
 };
 class Parameter{
     public:

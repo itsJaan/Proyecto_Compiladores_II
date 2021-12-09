@@ -28,7 +28,7 @@ STRING "string"
 
 ID [A-Za-z][a-zA-Z0-9]* 
 LIT_FLOAT {DIGIT}+"."{DIGIT}+ 
-LIT_STRING [\"][a-zA-Z0-9~!@#$^&*\(\)\{\}\[\]:\.\; ]*[\"] 
+LIT_STRING [\"][a-zA-Z0-9~!@#$^&*\/\(\)\{\}\[\]:\.\;\=\+\-\*\%\>\<\&\| ]*[\"] 
 
 PLUS "+"
 MINUS "-"
