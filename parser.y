@@ -385,7 +385,7 @@ binary_operation: assign_types rel_operator assign_types { BinaryOp * tmp = new 
                                                            tmp->evaluate();
                                                          }
                 | assign_types binary_operator assign_types { BinaryOp * tmp = new BinaryOp($1, $3, yylineno);
-                                                              tmp->evaluate();
+                                                              tmp->evaluateBinaryOperator();
                                                             }
                 ;
 

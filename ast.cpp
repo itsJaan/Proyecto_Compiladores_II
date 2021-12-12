@@ -306,6 +306,17 @@ void BinaryOp::evaluate(){
     }
 };
 
+void BinaryOp::evaluateBinaryOperator(){
+    if(this->left ==2 && this->right==2){
+        // cout<<"Condicion if Correcta \n";
+        return;
+    }
+    else{
+        cout<<"Error: operación invalida. Se esperaba un tipo Bool. Linea: "<<this->line<<endl;
+        return;   
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 
 void Arith::addOp(int type){

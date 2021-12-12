@@ -1,21 +1,30 @@
 package main
  
-import "fmt"
- 
-func BubbleSort(array[] int, size int)[]int {
-   for i:=0; i< size-1; i++ {
-      for j:=0; j < size-i-1; j++ {
-         if array[j] > array[j+1] {
-            array[j]  = array[j+1] 
-            array[j+1] = array[j]
-         }
-      }
-   }
-   return array
-}
+import (
+    "fmt"
+    "math/rand"
+)
  
 func main() {
-   var size = 7
-   array:= [3]int{1,2,3}
-   fmt.Println(BubbleSort(array, size))
+ 
+    /*
+    Operadores básicos
+    */
+    a:= 40.0
+    b:= 5
+    var william = true
+    var javier = false
+    fmt.Println("a = ", a)
+    fmt.Println("b = ", b)
+    fmt.Println("a+b = ", a&&b)
+    fmt.Println("a-b = ", a-b)
+    fmt.Println("a*b = ", a*b)  
+    fmt.Println("a/b = ", a/b)
+    //fmt.Println("a%b = ", a%b)
+    fmt.Println("a>b = ", a>b)
+    fmt.Println("a<b = ", a<b)
+    fmt.Println("a>=b = ", a>=b)
+    fmt.Println("a<=b = ", a<=b)
+    fmt.Println("true&&true = ", true && false)
+ 
 }

@@ -75,6 +75,7 @@ class BinaryOp{
         int right;
         int line;
         void evaluate();
+        void evaluateBinaryOperator();
 };
 
 class Arith{
