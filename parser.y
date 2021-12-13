@@ -68,19 +68,17 @@ functions: function
          | function functions 
          ;
 
-function: func_id TK_PAR_A params TK_PAR_C TK_BRACKET_A TK_BRACKET_C n_types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($1, $7, yylineno);
+function: func_id TK_PAR_A params TK_PAR_C isArray n_types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($1, ($6+10), yylineno);
                                                                                                                    $$->addFunction();}
         | func_id TK_PAR_A params TK_PAR_C n_types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($1, $5, yylineno);
                                                                                           $$->addFunction();
-                                                                                          }// Program *tmp = new Program();
-                                                                                          // tmp->printLists();}
-        /* | TK_FUNC TK_ID TK_PAR_A params TK_PAR_C TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($2,0, yylineno);
-                                                                                    $$->addFunction();
-                                                                                   } */
+                                                                                    }
+        ;
+isArray : TK_BRACKET_A TK_BRACKET_C {Program *tmp = new Program(); tmp->isArray();} 
         ;
 func_id:TK_FUNC TK_ID {$$= $2; Program *tmp = new Program(); tmp->ProgramPushContext();}
             ;
-n_types : types  { $$ = $1; Program *tmp = new Program(); tmp->saveFuncType($1);}
+n_types : types  { $$ = $1; Program *tmp = new Program(); tmp->saveFuncType(($1));}
         | /* E */{ $$ = 0;}
         ; 
 
@@ -101,7 +99,7 @@ params_no_empty: param
       ;
 
 
-param: TK_ID TK_BRACKET_A TK_BRACKET_C types {$$ = new Parameter($1 , $4);
+param: TK_ID TK_BRACKET_A TK_BRACKET_C types {$$ = new Parameter($1 , ($4+10));
                                               $$->addParameter();} 
      |TK_ID types {$$ = new Parameter($1 , $2);
                    $$->addParameter();}
@@ -156,7 +154,7 @@ array: TK_VAR TK_ID array_type {
                                  // printf("valor de: %d\n", $3->type);
                                  tmp->addToList(); 
                                  tmp->addTypeToList($3->type);
-                                 $$ = new Declaration($3->type, yylineno, true , $3->size); 
+                                 $$ = new Declaration(($3->type+10), yylineno, true , $3->size); 
                                  $$->addDeclaration(); }
      ;
 
@@ -196,7 +194,7 @@ assign_types:
             | TK_ID TK_BRACKET_A arithmetic TK_BRACKET_C {Ids  * tmp = new Ids($1);
                                                           $$ = tmp->getType();
                                                         }
-            | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C { $$ = $4 ; Assignment *tmp = new Assignment(yylineno); tmp->evaluateArray($4, $2->size, $2->value); }
+            | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C { $$ = ($4+10); Assignment *tmp = new Assignment(yylineno); tmp->evaluateArray($4, $2->size, $2->value); }
             ;
 
 arithmetic: op V {$$ = $1;}
