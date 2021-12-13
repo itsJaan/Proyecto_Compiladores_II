@@ -1,7 +1,17 @@
 #include "ast.h"
 #include <iostream>
 
+/*
+1 = string
+2 = bool
+3 = int
+4 = float
+11 = string array
+12 = bool array
+13 = int array
+14 = float array
 
+*/
 map<string,Decl> variables;
 map<string, FunctionS> functions;
 list<Parameter> aux_params;
@@ -16,6 +26,8 @@ int countParams();
 int arrayValuesCont = 0;// para validar el tamaño del arreglo
 int actualFuncType = 0;
 int inFor=false;
+int isArrayType= 0;
+
 
 class ContextStack{
     public:
@@ -75,7 +87,11 @@ void Program::ProgramPopContext(){
 };
 
 void Program::saveFuncType(int type){
-    actualFuncType = type;
+    actualFuncType = type + isArrayType;
+}
+
+void Program::isArray(){
+    isArrayType=10;
 }
 
 void Program::enteringFor(){
@@ -409,6 +425,7 @@ void Function::addFunction(){
     aux_params.clear();
     clearIdList();
     actualFuncType=0;
+    isArrayType=0;
     popContext();
 };
 

@@ -17,6 +17,7 @@ class Program{
         void ProgramPushContext();
         void ProgramPopContext();
         void saveFuncType(int type);
+        void isArray();
         void enteringFor();
         void exitingFor();
 };
