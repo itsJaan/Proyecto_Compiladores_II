@@ -1,9 +1,14 @@
 #include <string>
 #include <list>
 #include <map>
-
+#include "code.h"
 using namespace std;
 
+string getIntTemp();
+void releaseIntTemp(string temp);
+
+string getFloatTemp();
+void releaseFloatTemp(string temp);
 enum type{
     STRING,
     BOOL,
@@ -20,6 +25,7 @@ class Program{
         void isArray();
         void enteringFor();
         void exitingFor();
+        void writeFile();
 };
 
 class Declaration{
@@ -41,6 +47,7 @@ class Declaration{
         void evaluateReturn(int type);
         void evaluateBreak();
         void evaluateContinue();
+        void genCode(Code &code);
 };
 class Assignment{
     public:
@@ -51,6 +58,7 @@ class Assignment{
         void evaluateAssignment();
         void evaluateIncreDecre(string name);
         void evaluateArray(int type, int size, int value);
+        void genCode(Code &code);
 };
 
 class Ids{
@@ -63,6 +71,7 @@ class Ids{
         int getType();
         int getSize();
         void addTypeToList(int type);
+        void genCode(Code &code);
 };
 
 class BinaryOp{
@@ -77,6 +86,7 @@ class BinaryOp{
         int line;
         void evaluate();
         void evaluateBinaryOperator();
+        void genCode(Code &code);
 };
 
 class Arith{
@@ -89,6 +99,7 @@ class Arith{
         void addOp(int type);
         void addSign(int sign);
         void clearList();
+        void genCode(Code &code);
 };
 
 class Function{
@@ -105,6 +116,9 @@ class Function{
         
         void addFunction();
         int evaluateCall(string name);
+        void idNameGenCode(string name);
+        void funcStackGenCode();
+        void endFuncGenCode();
         
 };
 class Parameter{
@@ -116,6 +130,7 @@ class Parameter{
         string name;
         int type;
         void addParameter();
+        void paramGenCode();
 };
 class CalledParam{
     public:
@@ -126,12 +141,14 @@ class CalledParam{
         int type;
         int line;
         void addCalledParam();
+        void genCode(Code &code);
 };
 
 struct FunctionS{
     int type;
     list<Parameter> params;
     bool isImport=false;
+    void genCode(Code &code);
 };
 
 struct Decl{
@@ -149,4 +166,5 @@ class Array{
         int line;
         void newArrayValue();
         void clearArrayValues();
+        void genCode(Code &code);;
 };

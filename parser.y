@@ -5,6 +5,10 @@
 
     #include <cstdio>
     #include <list>
+    #include "asm.h"
+    #include <fstream>
+    #include <iostream>
+
     using namespace std;
     int yylex();
     extern int yylineno;
@@ -14,6 +18,18 @@
 
     #define YYERROR_VERBOSE 1
     #define YYDEBUG 1
+
+    Asm assemblyFile;
+
+    void writeFile(string name){
+        ofstream file;
+        file.open(name);
+        file << assemblyFile.data << endl
+        << assemblyFile.global <<endl
+        << assemblyFile.text << endl;
+        
+        file.close();
+    }
 %}
 
 %union{
@@ -52,7 +68,10 @@
 %%
 
 
-uc: package import functions ;
+uc: package import functions {
+    Program * p = new Program();
+    p->writeFile();
+};
 
 package: TK_PACKAGE TK_ID ;
 
@@ -69,17 +88,27 @@ functions: function
          ;
 
 function: func_id TK_PAR_A params TK_PAR_C isArray n_types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($1, ($6+10), yylineno);
-                                                                                                                   $$->addFunction();}
+                                                                                                                   $$->addFunction();
+                                                                                                                   $$->endFuncGenCode();}
         | func_id TK_PAR_A params TK_PAR_C n_types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($1, $5, yylineno);
                                                                                           $$->addFunction();
+                                                                                          $$->endFuncGenCode();
                                                                                     }
         ;
 isArray : TK_BRACKET_A TK_BRACKET_C {Program *tmp = new Program(); tmp->isArray();} 
         ;
-func_id:TK_FUNC TK_ID {$$= $2; Program *tmp = new Program(); tmp->ProgramPushContext();}
+func_id:TK_FUNC TK_ID {$$= $2; Program *tmp = new Program(); tmp->ProgramPushContext();
+                       Function * f = new Function(" ", 0, 0);
+                       f->idNameGenCode($2);
+}
             ;
-n_types : types  { $$ = $1; Program *tmp = new Program(); tmp->saveFuncType(($1));}
-        | /* E */{ $$ = 0;}
+n_types : types  { $$ = $1; Program *tmp = new Program(); tmp->saveFuncType(($1));
+                  Function * f = new Function(" ", 0, 0);
+                  f->funcStackGenCode();
+}
+        | /* E */{ $$ = 0;
+                   Function * f = new Function(" ", 0, 0);
+                   f->funcStackGenCode();}
         ; 
 
 
@@ -100,9 +129,11 @@ params_no_empty: param
 
 
 param: TK_ID TK_BRACKET_A TK_BRACKET_C types {$$ = new Parameter($1 , ($4+10));
-                                              $$->addParameter();} 
+                                              $$->addParameter();
+                                              $$->paramGenCode();} 
      |TK_ID types {$$ = new Parameter($1 , $2);
-                   $$->addParameter();}
+                   $$->addParameter();
+                   $$->paramGenCode();}
      ;
 
 infunctions: /* E */

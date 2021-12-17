@@ -13,6 +13,10 @@ func BubbleSort(array [] int, size int) [] int {
    }
    return array
 }
+
+func perroBravo(size int)int {
+
+}
  
 func main() {
    var size = 7
