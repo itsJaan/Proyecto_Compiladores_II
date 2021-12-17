@@ -1,5 +1,10 @@
 #include "ast.h"
 #include <iostream>
+#include <set>
+#include <cstdio>
+#include <cstdlib>
+#include <sstream>
+#include <fstream>
 
 /*
 1 = string
@@ -27,7 +32,105 @@ int arrayValuesCont = 0;// para validar el tamaño del arreglo
 int actualFuncType = 0;
 int inFor=false;
 int isArrayType= 0;
+int labelCounter = 0;
+int globalStackPointer = 0;
+int globalFileChars = 0;
+string currentFuncName = "";
+string state = "";
 
+string generalCode = "";
+
+const char * int_temps[] = {"$t0","$t1","$t2","$t3","$t4","$t5","$t6","$t7","$t8","$t9"};
+const char * float_Temps[] = {"$f0",
+                            "$f1",
+                            "$f2",
+                            "$f3",
+                            "$f4",
+                            "$f5",
+                            "$f6",
+                            "$f7",
+                            "$f8",
+                            "$f9",
+                            "$f10",
+                            "$f11",
+                            "$f12",
+                            "$f13",
+                            "$f14",
+                            "$f15",
+                            "$f16",
+                            "$f17",
+                            "$f18",
+                            "$f19",
+                            "$f20",
+                            "$f21",
+                            "$f22",
+                            "$f23",
+                            "$f24",
+                            "$f25",
+                            "$f26",
+                            "$f27",
+                            "$f28",
+                            "$f29",
+                            "$f30",
+                            "$f31"
+                        };
+
+#define INT_TEMP_COUNT 10
+#define FLOAT_TEMP_COUNT 32
+set<string> intTempMap; 
+set<string> floatTempMap;
+
+string getIntTemp(){
+    for (int i = 0; i < INT_TEMP_COUNT; i++)
+    {
+        if (intTempMap.find(int_temps[i]) == intTempMap.end())
+        {
+            intTempMap.insert(int_temps[i]);
+            return string(int_temps[i]);
+        }
+        
+    }
+    return "";
+}
+
+string getFloatTemp(){
+    for (int i = 0; i < FLOAT_TEMP_COUNT; i++)
+    {
+        if(floatTempMap.find(float_Temps[i]) == floatTempMap.end()){
+            floatTempMap.insert(float_Temps[i]);
+            return string(float_Temps[i]);
+        }
+    }
+    return "";
+}
+
+string saveState(){
+    stringstream ss;
+    ss<<"sw $ra, " <<globalStackPointer<< "($sp)\n";
+    globalStackPointer+=4;
+    // globalFileChars += ss.str().size();
+    return ss.str();
+}
+
+string retrieveState(string state){
+    std::string::size_type n = 0;
+    string s = "sw";
+    while ( ( n = state.find( s, n ) ) != std::string::npos )
+    {
+    state.replace( n, s.size(), "lw" );
+    n += 2;
+    globalStackPointer-=4;
+    }
+    return state;
+}
+
+void releaseIntTemp(string temp){
+    intTempMap.erase(temp);
+}
+
+void releaseFloatTemp(string temp){
+    floatTempMap.erase(temp);
+}
 
 class ContextStack{
     public:
@@ -38,6 +141,14 @@ class ContextStack{
 ContextStack * rootContext = NULL;
 bool searchVariable(string key, ContextStack* actual);
 Decl searchVariableType(string key, ContextStack *actual);
+
+
+string getNewLabel(string prefix){
+    stringstream ss;
+    ss<<prefix << labelCounter;
+    labelCounter++;
+    return ss.str();
+}
 
 void pushContext(){
     variables.clear();
@@ -98,7 +209,18 @@ void Program::enteringFor(){
     inFor = true;
 }
 void Program::exitingFor(){
+
     inFor = false;
+}
+
+void Program::writeFile(){
+        ofstream file;
+        file.open("result.s");
+        file << ".data" << endl
+        << ".globl main" <<endl
+        << ".text" << endl
+        << generalCode << endl;
+        file.close();
 }
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -470,6 +592,34 @@ int Function::evaluateCall(string name){
     return tmp.type;
 };
 
+void Function::idNameGenCode(string name){
+    globalStackPointer = 0;
+    stringstream code;
+    code << name<<": "<<endl;
+    // globalFileChars += name.size()+2;
+    state = saveState();
+    code <<state<<endl;
+    generalCode += code.str();
+    currentFuncName = name;
+}
+
+void Function::funcStackGenCode(){
+    stringstream code;
+    code <<endl<<"addiu $sp, $sp, -"<<globalStackPointer<<endl;
+    int pos = generalCode.find(currentFuncName, 0);
+    pos = pos + currentFuncName.size()+2;
+    generalCode.insert(pos, code.str());
+    // globalFileChars+= code.str().size();
+}
+
+void Function::endFuncGenCode(){
+    stringstream code;
+    int currentStackPointer = globalStackPointer;
+    code << retrieveState(state);
+    code << "addiu $sp, $sp, "<<currentStackPointer<<endl;
+    code <<"jr $ra"<<endl;
+    generalCode += code.str();
+}
 //////////////////////////////////////////////////////////////////////////////////
 
 void Parameter::addParameter(){
@@ -486,6 +636,7 @@ void Parameter::addParameter(){
             rootContext->variables[this->name] = s;
             Parameter newpar = Parameter(this->name ,this->type);
             aux_params.push_back(newpar);
+            cont_params++;
             // cout<<"Variable '"<< this->name<<endl;
         }
     }else{
@@ -493,6 +644,17 @@ void Parameter::addParameter(){
     }
 };
 
+void Parameter::paramGenCode(){
+    stringstream code;
+    if (cont_params < 4)
+    {
+        int currentParam = cont_params-1;
+        code << "sw $a"<<currentParam<<", "<< globalStackPointer<<"($sp)"<<endl;
+        globalStackPointer+=4;
+        generalCode+= code.str();
+    }
+    
+}
 ///////////////////////////////////////////////////////////////////////////////////
 void CalledParam::addCalledParam(){
     called_params.push_back(this->type);
