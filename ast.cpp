@@ -37,6 +37,7 @@ int globalStackPointer = 0;
 int globalFileChars = 0;
 string currentFuncName = "";
 string state = "";
+list<string> arithTmps;
 
 string generalCode = "";
 
@@ -208,6 +209,7 @@ void Program::isArray(){
 void Program::enteringFor(){
     inFor = true;
 }
+
 void Program::exitingFor(){
 
     inFor = false;
@@ -316,11 +318,23 @@ void Declaration::evaluateBreak(){
         cout<<"Error: Break no esta dentro de un for, Linea: "<<this->line<<endl;
     }
 };
+
 void Declaration::evaluateContinue(){
     if(!inFor){
         cout<<"Error: Continue no esta dentro de un for, Linea: "<<this->line<<endl;
     }
 };
+
+void Declaration::intDeclGenCode(int num){
+    stringstream ss;
+    string tmp = getIntTemp();
+    if(tmp!=""){
+        ss<<"li "<<tmp<<", "<<num<<endl;
+        generalCode+=ss.str();
+    }
+    arithTmps.push_back(tmp);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 
 void Assignment::evaluateAssignment(){
@@ -521,6 +535,68 @@ void Arith::addSign(int sign){
     sign_types.push_back(sign);
 };
 
+void Arith::sumGenCode(){
+    stringstream ss;
+    string tmp = getIntTemp();
+    if(tmp!=""){
+        string right = arithTmps.back();
+        arithTmps.pop_back();
+        string left  = arithTmps.back();
+        arithTmps.pop_back();
+        ss<<"add "<<tmp<<", "<<left<<","<<right<<endl;
+        generalCode+= ss.str();
+        releaseIntTemp(right);
+        releaseIntTemp(left);
+        arithTmps.push_back(tmp);
+    }
+}
+void Arith::subGenCode(){
+    stringstream ss;
+    string tmp = getIntTemp();
+    if(tmp!=""){
+        string right = arithTmps.back();
+        arithTmps.pop_back();
+        string left  = arithTmps.back();
+        arithTmps.pop_back();
+        ss<<"sub "<<tmp<<", "<<left<<","<<right<<endl;
+        generalCode+= ss.str();
+        releaseIntTemp(right);
+        releaseIntTemp(left);
+        arithTmps.push_back(tmp);
+    }
+}
+void Arith::multGenCode(){
+    stringstream ss;
+    string tmp = getIntTemp();
+    if(tmp!=""){
+        string right = arithTmps.back();
+        arithTmps.pop_back();
+        string left  = arithTmps.back();
+        arithTmps.pop_back();
+        ss<<"mult "<<left<<","<<right<<endl;
+        ss<<"mflo "<<tmp<<endl;
+        generalCode+= ss.str();
+        releaseIntTemp(right);
+        releaseIntTemp(left);
+        arithTmps.push_back(tmp);
+    }
+}
+void Arith::divGenCode(){
+    stringstream ss;
+    string tmp = getIntTemp();
+    if(tmp!=""){
+        string right = arithTmps.back();
+        arithTmps.pop_back();
+        string left  = arithTmps.back();
+        arithTmps.pop_back();
+        ss<<"div "<<left<<","<<right<<endl;
+        ss<<"mflo "<<tmp<<endl;
+        generalCode+= ss.str();
+        releaseIntTemp(right);
+        releaseIntTemp(left);
+        arithTmps.push_back(tmp);
+    }
+}
 //////////////////////////////////////////////////////////////////////////////////
 
 void Function::addFunction(){
@@ -615,9 +691,9 @@ void Function::funcStackGenCode(){
 void Function::endFuncGenCode(){
     stringstream code;
     int currentStackPointer = globalStackPointer;
-    code << retrieveState(state);
-    code << "addiu $sp, $sp, "<<currentStackPointer<<endl;
-    code <<"jr $ra"<<endl;
+    code << endl<<retrieveState(state);
+    code << "\naddiu $sp, $sp, "<<currentStackPointer<<endl;
+    code <<"jr $ra\n"<<endl;
     generalCode += code.str();
 }
 //////////////////////////////////////////////////////////////////////////////////
@@ -655,12 +731,15 @@ void Parameter::paramGenCode(){
     }
     
 }
+
 ///////////////////////////////////////////////////////////////////////////////////
+
 void CalledParam::addCalledParam(){
     called_params.push_back(this->type);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////
+
 int countParams(){
     list<int>:: iterator it = called_params.begin();
     int cont_aux=0;
@@ -686,6 +765,7 @@ bool searchVariable(string key , ContextStack *actualContext){
     }
     return false; 
 };
+
 Decl searchVariableType(string key, ContextStack * actualContext){
     if(actualContext != NULL){
         auto search = actualContext->variables.find(key);

@@ -48,6 +48,7 @@ class Declaration{
         void evaluateBreak();
         void evaluateContinue();
         void genCode(Code &code);
+        void intDeclGenCode(int num);
 };
 class Assignment{
     public:
@@ -99,7 +100,12 @@ class Arith{
         void addOp(int type);
         void addSign(int sign);
         void clearList();
-        void genCode(Code &code);
+        void sumGenCode();
+        void subGenCode();
+        void multGenCode();
+        void divGenCode();
+        
+        
 };
 
 class Function{
