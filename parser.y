@@ -236,10 +236,12 @@ arithmetic: op V {$$ = $1;}
 V: TK_MULT T X  {$$ = $2; 
     Arith * tmp = new Arith(yylineno);
     tmp->addSign(3);
+    tmp->multGenCode();
 }
  | TK_DIV T X { $$ = $2; 
     Arith * tmp = new Arith(yylineno);
     tmp->addSign(4);
+    tmp->divGenCode();
  }
  | TK_PORC T X { $$ = $2; 
     Arith * tmp = new Arith(yylineno);
@@ -248,10 +250,12 @@ V: TK_MULT T X  {$$ = $2;
  | TK_PLUS arithmetic { $$ = $2; 
     Arith * tmp = new Arith(yylineno);
     tmp->addSign(1);
+    tmp->sumGenCode();
  }
  | TK_MINUS arithmetic { $$ = $2; 
     Arith * tmp = new Arith(yylineno);
     tmp->addSign(2);
+    tmp->subGenCode();
  }
 
  | /* */
@@ -262,10 +266,12 @@ X: /* */
  | TK_PLUS arithmetic { $$ = $2; 
     Arith * tmp = new Arith(yylineno);
     tmp->addSign(1);
+    tmp->sumGenCode();
  }
  | TK_MINUS arithmetic { $$ = $2; 
      Arith * tmp = new Arith(yylineno);
     tmp->addSign(2);
+    tmp->subGenCode();
  }
  ;
 
@@ -276,10 +282,12 @@ T: op U {$$ = $1;}
 U: TK_MULT T {$$ = $2;
     Arith * tmp = new Arith(yylineno);
     tmp->addSign(3);
+    tmp->multGenCode();
 }
  | TK_DIV T { $$ = $2; 
     Arith * tmp = new Arith(yylineno);
     tmp->addSign(4);
+    tmp->divGenCode();
  }
  | /* */
  ;
@@ -295,6 +303,8 @@ op: TK_LIT_INT { Decl * s = new Decl();
                 s->size = 3;
                 s->value = $1;
                 $$ = s;
+                Declaration *d = new Declaration(0,yylineno,false, 0);
+                d->intDeclGenCode($1);
                }
   | TK_LIT_FLOAT {Decl * s = new Decl();
                   s-> type = 4;
