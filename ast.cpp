@@ -32,16 +32,18 @@ int arrayValuesCont = 0;// para validar el tamaño del arreglo
 int actualFuncType = 0;
 int inFor=false;
 int isArrayType= 0;
-int labelCounter = 0;
 int globalStackPointer = 0;
 int globalFileChars = 0;
 string currentFuncName = "";
 string state = "";
 list<string> arithTmps;
-
 string generalCode = "";
+int labelCounter =0;
+string data = ".data\n";
+map<string, string> stringsMap;
 
 const char * int_temps[] = {"$t0","$t1","$t2","$t3","$t4","$t5","$t6","$t7","$t8","$t9"};
+const char * args_temps[] = {"$a0","$a1","$a2","$a3"};
 const char * float_Temps[] = {"$f0",
                             "$f1",
                             "$f2",
@@ -77,9 +79,11 @@ const char * float_Temps[] = {"$f0",
                         };
 
 #define INT_TEMP_COUNT 10
+#define ARGS_TEMP_COUNT 4
 #define FLOAT_TEMP_COUNT 32
 set<string> intTempMap; 
 set<string> floatTempMap;
+set<string> argsTempMap;
 
 string getIntTemp(){
     for (int i = 0; i < INT_TEMP_COUNT; i++)
@@ -88,6 +92,19 @@ string getIntTemp(){
         {
             intTempMap.insert(int_temps[i]);
             return string(int_temps[i]);
+        }
+        
+    }
+    return "";
+}
+
+string getArgsTemp(){
+    for (int i = 0; i < ARGS_TEMP_COUNT; i++)
+    {
+        if (argsTempMap.find(args_temps[i]) == argsTempMap.end())
+        {
+            argsTempMap.insert(args_temps[i]);
+            return string(args_temps[i]);
         }
         
     }
@@ -133,6 +150,13 @@ void releaseFloatTemp(string temp){
     floatTempMap.erase(temp);
 }
 
+string getNewLabel(string prefix){
+    stringstream ss;
+    ss<<prefix<<labelCounter;
+    labelCounter++;
+    return ss.str();
+}
+
 class ContextStack{
     public:
         struct ContextStack* prev;
@@ -143,13 +167,6 @@ ContextStack * rootContext = NULL;
 bool searchVariable(string key, ContextStack* actual);
 Decl searchVariableType(string key, ContextStack *actual);
 
-
-string getNewLabel(string prefix){
-    stringstream ss;
-    ss<<prefix << labelCounter;
-    labelCounter++;
-    return ss.str();
-}
 
 void pushContext(){
     variables.clear();
@@ -218,7 +235,7 @@ void Program::exitingFor(){
 void Program::writeFile(){
         ofstream file;
         file.open("result.s");
-        file << ".data" << endl
+        file << data << endl
         << ".globl main" <<endl
         << ".text" << endl
         << generalCode << endl;
@@ -333,7 +350,41 @@ void Declaration::intDeclGenCode(int num){
         generalCode+=ss.str();
     }
     arithTmps.push_back(tmp);
+};
+
+void Declaration::floatDeclGenCode(float num){
+    stringstream ss;
+    string tmp = getFloatTemp();
+    if(tmp!=""){
+        ss<<"li.s "<<tmp<<", "<<num<<endl;
+        generalCode+=ss.str();
+    }
+    arithTmps.push_back(tmp);
+};
+
+void Declaration::boolDeclGenCode(int type){
+    stringstream ss;
+    string tmp = getIntTemp();
+    if(tmp!=""){
+        ss<<"li "<<tmp<<", "<<type<<endl;
+        generalCode+=ss.str();
+    }
+    arithTmps.push_back(tmp);
+};
+
+void Declaration::stringDeclGenCode(string str){
+    string label = getNewLabel("string");
+    stringstream ss;
+    ss<<label<<": .asciiz "<<str<<endl;
+    data += ss.str();
+
+    stringstream sss;
+    string tmp = getArgsTemp();
+    sss<<"la "<<tmp<<", "<<label<<endl;
+    generalCode+= sss.str();
+    stringsMap[label] = str;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -537,66 +588,236 @@ void Arith::addSign(int sign){
 
 void Arith::sumGenCode(){
     stringstream ss;
-    string tmp = getIntTemp();
-    if(tmp!=""){
-        string right = arithTmps.back();
-        arithTmps.pop_back();
-        string left  = arithTmps.back();
-        arithTmps.pop_back();
-        ss<<"add "<<tmp<<", "<<left<<","<<right<<endl;
-        generalCode+= ss.str();
-        releaseIntTemp(right);
-        releaseIntTemp(left);
-        arithTmps.push_back(tmp);
+    string right = arithTmps.back();
+    arithTmps.pop_back();
+    string left  = arithTmps.back();
+    arithTmps.pop_back();
+
+    if(right.find('t')==1 && left.find('f')==1 ){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"mtc1 "<<right<<", "<<tmp<<endl;
+            ss<<"cvt.s.w "<<tmp<<", "<<tmp<<endl;
+            string tmpAux = getFloatTemp();
+            releaseIntTemp(right);
+            releaseFloatTemp(left);
+            if(tmpAux!=""){
+                ss<<"add.s "<<tmpAux<<", "<<left<<","<<tmp<<endl;
+                generalCode+= ss.str();
+                releaseFloatTemp(tmp);
+                arithTmps.push_back(tmpAux);
+            }
+        } 
+    }else if(right.find('f')==1 && left.find('t')==1){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"mtc1 "<<left<<", "<<tmp<<endl;
+            ss<<"cvt.s.w "<<tmp<<", "<<tmp<<endl;
+            string tmpAux = getFloatTemp();
+            releaseFloatTemp(right);
+            releaseIntTemp(left);
+            if(tmpAux!=""){
+                ss<<"add.s "<<tmpAux<<", "<<tmp<<","<<right<<endl;
+                generalCode+= ss.str();
+                releaseFloatTemp(tmp);
+                arithTmps.push_back(tmpAux);
+            }
+        }
+    }else if (right.find('t')==1 && left.find('t')==1){
+        string tmp = getIntTemp();
+        if(tmp!=""){
+            ss<<"add "<<tmp<<", "<<left<<","<<right<<endl;
+            generalCode+= ss.str();
+            releaseIntTemp(right);
+            releaseIntTemp(left);
+            arithTmps.push_back(tmp);
+        }
+    }else if (right.find('f')==1 && left.find('f')==1){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"add.s "<<tmp<<", "<<left<<","<<right<<endl;
+            generalCode+= ss.str();
+            releaseFloatTemp(right);
+            releaseFloatTemp(left);
+            arithTmps.push_back(tmp);
+        } 
     }
 }
+
 void Arith::subGenCode(){
     stringstream ss;
-    string tmp = getIntTemp();
-    if(tmp!=""){
-        string right = arithTmps.back();
-        arithTmps.pop_back();
-        string left  = arithTmps.back();
-        arithTmps.pop_back();
-        ss<<"sub "<<tmp<<", "<<left<<","<<right<<endl;
-        generalCode+= ss.str();
-        releaseIntTemp(right);
-        releaseIntTemp(left);
-        arithTmps.push_back(tmp);
+    string right = arithTmps.back();
+    arithTmps.pop_back();
+    string left  = arithTmps.back();
+    arithTmps.pop_back();
+
+    if(right.find('t')==1 && left.find('f')==1 ){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"mtc1 "<<right<<", "<<tmp<<endl;
+            ss<<"cvt.s.w "<<tmp<<", "<<tmp<<endl;
+            string tmpAux = getFloatTemp();
+            releaseIntTemp(right);
+            releaseFloatTemp(left);
+            if(tmpAux!=""){
+                ss<<"sub.s "<<tmpAux<<", "<<left<<","<<tmp<<endl;
+                generalCode+= ss.str();
+                releaseFloatTemp(tmp);
+                arithTmps.push_back(tmpAux);
+            }
+        } 
+    }else if(right.find('f')==1 && left.find('t')==1){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"mtc1 "<<left<<", "<<tmp<<endl;
+            ss<<"cvt.s.w "<<tmp<<", "<<tmp<<endl;
+            string tmpAux = getFloatTemp();
+            releaseFloatTemp(right);
+            releaseIntTemp(left);
+            if(tmpAux!=""){
+                ss<<"sub.s "<<tmpAux<<", "<<tmp<<","<<right<<endl;
+                generalCode+= ss.str();
+                releaseFloatTemp(tmp);
+                arithTmps.push_back(tmpAux);
+            }
+        }
+    }else if (right.find('t')==1 && left.find('t')==1){
+        string tmp = getIntTemp();
+        if(tmp!=""){
+             ss<<"sub "<<tmp<<", "<<left<<","<<right<<endl;
+            generalCode+= ss.str();
+            releaseIntTemp(right);
+            releaseIntTemp(left);
+            arithTmps.push_back(tmp);
+        }
+    }else if (right.find('f')==1 && left.find('f')==1){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"sub.s "<<tmp<<", "<<left<<","<<right<<endl;
+            generalCode+= ss.str();
+            releaseFloatTemp(right);
+            releaseFloatTemp(left);
+            arithTmps.push_back(tmp);
+        } 
     }
 }
+
 void Arith::multGenCode(){
     stringstream ss;
-    string tmp = getIntTemp();
-    if(tmp!=""){
-        string right = arithTmps.back();
-        arithTmps.pop_back();
-        string left  = arithTmps.back();
-        arithTmps.pop_back();
-        ss<<"mult "<<left<<","<<right<<endl;
-        ss<<"mflo "<<tmp<<endl;
-        generalCode+= ss.str();
-        releaseIntTemp(right);
-        releaseIntTemp(left);
-        arithTmps.push_back(tmp);
+    string right = arithTmps.back();
+    arithTmps.pop_back();
+    string left  = arithTmps.back();
+    arithTmps.pop_back();
+
+    if(right.find('t')==1 && left.find('f')==1 ){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"mtc1 "<<right<<", "<<tmp<<endl;
+            ss<<"cvt.s.w "<<tmp<<", "<<tmp<<endl;
+            string tmpAux = getFloatTemp();
+            releaseIntTemp(right);
+            releaseFloatTemp(left);
+            if(tmpAux!=""){
+                ss<<"mul.s "<<tmpAux<<", "<<left<<","<<tmp<<endl;
+                generalCode+= ss.str();
+                releaseFloatTemp(tmp);
+                arithTmps.push_back(tmpAux);
+            }
+        } 
+    }else if(right.find('f')==1 && left.find('t')==1){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"mtc1 "<<left<<", "<<tmp<<endl;
+            ss<<"cvt.s.w "<<tmp<<", "<<tmp<<endl;
+            string tmpAux = getFloatTemp();
+            releaseFloatTemp(right);
+            releaseIntTemp(left);
+            if(tmpAux!=""){
+                ss<<"mul.s "<<tmpAux<<", "<<tmp<<","<<right<<endl;
+                generalCode+= ss.str();
+                releaseFloatTemp(tmp);
+                arithTmps.push_back(tmpAux);
+            }
+        }
+    }else if (right.find('t')==1 && left.find('t')==1){
+        string tmp = getIntTemp();
+        if(tmp!=""){
+            ss<<"mult "<<left<<","<<right<<endl;
+            ss<<"mflo "<<tmp<<endl;generalCode+= ss.str();
+            releaseIntTemp(right);
+            releaseIntTemp(left);
+            arithTmps.push_back(tmp);
+        }
+    }else if (right.find('f')==1 && left.find('f')==1){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"mul.s "<<tmp<<", "<<left<<","<<right<<endl;
+            generalCode+= ss.str();
+            releaseFloatTemp(right);
+            releaseFloatTemp(left);
+            arithTmps.push_back(tmp);
+        } 
     }
 }
+
 void Arith::divGenCode(){
     stringstream ss;
-    string tmp = getIntTemp();
-    if(tmp!=""){
-        string right = arithTmps.back();
-        arithTmps.pop_back();
-        string left  = arithTmps.back();
-        arithTmps.pop_back();
-        ss<<"div "<<left<<","<<right<<endl;
-        ss<<"mflo "<<tmp<<endl;
-        generalCode+= ss.str();
-        releaseIntTemp(right);
-        releaseIntTemp(left);
-        arithTmps.push_back(tmp);
+    string right = arithTmps.back();
+    arithTmps.pop_back();
+    string left  = arithTmps.back();
+    arithTmps.pop_back();
+
+    if(right.find('t')==1 && left.find('f')==1 ){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"mtc1 "<<right<<", "<<tmp<<endl;
+            ss<<"cvt.s.w "<<tmp<<", "<<tmp<<endl;
+            string tmpAux = getFloatTemp();
+            releaseIntTemp(right);
+            releaseFloatTemp(left);
+            if(tmpAux!=""){
+                ss<<"div.s "<<tmpAux<<", "<<left<<","<<tmp<<endl;
+                generalCode+= ss.str();
+                releaseFloatTemp(tmp);
+                arithTmps.push_back(tmpAux);
+            }
+        } 
+    }else if(right.find('f')==1 && left.find('t')==1){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"mtc1 "<<left<<", "<<tmp<<endl;
+            ss<<"cvt.s.w "<<tmp<<", "<<tmp<<endl;
+            string tmpAux = getFloatTemp();
+            releaseFloatTemp(right);
+            releaseIntTemp(left);
+            if(tmpAux!=""){
+                ss<<"div.s "<<tmpAux<<", "<<tmp<<","<<right<<endl;
+                generalCode+= ss.str();
+                releaseFloatTemp(tmp);
+                arithTmps.push_back(tmpAux);
+            }
+        }
+    }else if (right.find('t')==1 && left.find('t')==1){
+        string tmp = getIntTemp();
+        if(tmp!=""){
+            ss<<"div "<<left<<","<<right<<endl;
+            ss<<"mflo "<<tmp<<endl;generalCode+= ss.str();
+            releaseIntTemp(right);
+            releaseIntTemp(left);
+            arithTmps.push_back(tmp);
+        }
+    }else if (right.find('f')==1 && left.find('f')==1){
+        string tmp = getFloatTemp();
+        if(tmp!=""){
+            ss<<"div.s "<<tmp<<", "<<left<<","<<right<<endl;
+            generalCode+= ss.str();
+            releaseFloatTemp(right);
+            releaseFloatTemp(left);
+            arithTmps.push_back(tmp);
+        } 
     }
 }
+
 //////////////////////////////////////////////////////////////////////////////////
 
 void Function::addFunction(){
