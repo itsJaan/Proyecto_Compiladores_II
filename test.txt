@@ -1,12 +1,11 @@
 package main
  
 import "fmt"
- 
-func BubbleSort(array [] int, size int) [] int {
-   var x = 3 / 4 + 2 * 6
-   return array
+func funcionH(hola int){
+   var str = "holamundo"
 }
- 
+
 func main() {
-   var size = 7
+   var size = 2.5 + 5.0 * 10
+   var boolEx = true
 }

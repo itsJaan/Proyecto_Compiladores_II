@@ -49,6 +49,10 @@ class Declaration{
         void evaluateContinue();
         void genCode(Code &code);
         void intDeclGenCode(int num);
+        void floatDeclGenCode(float num);
+        void boolDeclGenCode(int type);
+        void stringDeclGenCode(string str);
+
 };
 class Assignment{
     public:

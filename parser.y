@@ -225,7 +225,10 @@ assign_types:
             | TK_ID TK_BRACKET_A arithmetic TK_BRACKET_C {Ids  * tmp = new Ids($1);
                                                           $$ = tmp->getType();
                                                         }
-            | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C { $$ = ($4+10); Assignment *tmp = new Assignment(yylineno); tmp->evaluateArray($4, $2->size, $2->value); }
+            | TK_BRACKET_A arithmetic TK_BRACKET_C types TK_LLAVE_A list_assign_types TK_LLAVE_C { $$ = ($4+10); 
+                                                                                                   Assignment *tmp = new Assignment(yylineno); 
+                                                                                                   tmp->evaluateArray($4, $2->size, $2->value); 
+                                                                                                 }
             ;
 
 arithmetic: op V {$$ = $1;}
@@ -260,7 +263,6 @@ V: TK_MULT T X  {$$ = $2;
 
  | /* */
  ;
-
 
 X: /* */
  | TK_PLUS arithmetic { $$ = $2; 
@@ -312,6 +314,8 @@ op: TK_LIT_INT { Decl * s = new Decl();
                   tmp->addOp(4);
                   s->size = 0;  
                   $$ = s;
+                  Declaration *d = new Declaration(0,yylineno,false, 0);
+                  d->floatDeclGenCode($1);
                  }
   |TK_LIT_STRING {Decl * s = new Decl();
                   s-> type = 1;
@@ -319,6 +323,8 @@ op: TK_LIT_INT { Decl * s = new Decl();
                   tmp->addOp(1); 
                   s->size = 0; 
                   $$ = s;
+                  Declaration *d = new Declaration(0,yylineno,false, 0);
+                  d->stringDeclGenCode($1);
                  }
   | TK_ID { Decl * s = new Decl();
           Ids  * tmp = new Ids($1);
@@ -335,13 +341,17 @@ op: TK_LIT_INT { Decl * s = new Decl();
           tmp2->addOp(2);
           s->size = 0; 
           $$ = s;
+          Declaration *d = new Declaration(0,yylineno,false, 0);
+          d->boolDeclGenCode(1);
   }
   | TK_FALSE {Decl * s = new Decl();
-            s-> type = 2;
-          Arith * tmp2 = new Arith(yylineno);
-          tmp2->addOp(2);  
-          s->size = 0; 
-         $$ = s;
+              s-> type = 2;
+              Arith * tmp2 = new Arith(yylineno);
+              tmp2->addOp(2);  
+              s->size = 0; 
+              $$ = s;
+              Declaration *d = new Declaration(0,yylineno,false, 0);
+              d->boolDeclGenCode(0);
   }
   
   | call_function {Decl * s = new Decl(); Function * tmp = new Function("",0,yylineno);  
