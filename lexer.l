@@ -3,7 +3,6 @@
 
 %{
     #include "tokens.h"
-    extern int yylval;
 %}
 
 DIGIT [0-9]
@@ -29,7 +28,7 @@ STRING "string"
 
 ID [A-Za-z][a-zA-Z0-9]* 
 LIT_FLOAT {DIGIT}+"."{DIGIT}+ 
-LIT_STRING [\"].*[\"] 
+LIT_STRING [\"][a-zA-Z0-9~!@#$^&*\/\(\)\{\}\[\]:\.\;\=\+\-\*\%\>\<\&\| ]*[\"] 
 
 PLUS "+"
 MINUS "-"
@@ -73,7 +72,7 @@ PORC_EQUAL  "%="
 %%
 
 [ \t\r\n] {/*nada*/}
-{DIGIT}+ {return TK_LIT_INT;}
+{DIGIT}+ { yylval.int_t = atoi(yytext); return TK_LIT_INT;}
 {BREAK} {return TK_BREAK;}
 {FUNC} {return TK_FUNC;}
 {ELSE} {return TK_ELSE;}
@@ -91,9 +90,9 @@ PORC_EQUAL  "%="
 {FLOAT} {return TK_FLOAT;}
 {STRING} {return TK_STRING;}
 
-{ID} {return TK_ID;}
-{LIT_FLOAT} {return TK_LIT_FLOAT;}
-{LIT_STRING} {return TK_LIT_STRING;}
+{ID} { yylval.string_t = strdup(yytext); return TK_ID;}
+{LIT_FLOAT} { yylval.float_t = atof(yytext) ; return TK_LIT_FLOAT;}
+{LIT_STRING} { yylval.string_t = strdup(yytext) ; return TK_LIT_STRING;}
 
 {PLUS} {return TK_PLUS;}
 {MINUS} {return TK_MINUS;}
@@ -111,21 +110,21 @@ PORC_EQUAL  "%="
 {SEMICOLUMN} {return TK_SEMICOLUMN;}
 {COLUMN} {return TK_COLUMN;}
 {POT} {return TK_POT;}
-{EQUAL} {return TK_EQUAL;}
-{GREATER} {return TK_GREATER;}
-{LESS} {return TK_LESS;}
+{EQUAL} { yylval.string_t = strdup(yytext); return TK_EQUAL;}
+{GREATER} { yylval.string_t = strdup(yytext); return TK_GREATER;}
+{LESS} { yylval.string_t = strdup(yytext); return TK_LESS;}
 {PORC} {return TK_PORC;}
 {NOT} {return TK_NOT;}
 {PLUS_EQUAL} {return TK_PLUS_EQUAL;}
 {MINUS_EQUAL} {return TK_MINUS_EQUAL;}
 {PLUS_PLUS} {return TK_PLUS_PLUS;}
 {MINUS_MINUS} {return TK_MINUS_MINUS;}
-{OR} {return TK_OR;}
-{AND} {return TK_AND;}
-{NOT_EQUAL} {return TK_NOT_EQUAL;}
+{OR} { yylval.string_t = strdup(yytext); return TK_OR;}
+{AND} { yylval.string_t = strdup(yytext); return TK_AND;}
+{NOT_EQUAL} { yylval.string_t = strdup(yytext); return TK_NOT_EQUAL;}
 {OR_EQUAL} {return TK_OR_EQUAL;}
-{GREATER_EQUAL} {return TK_GREATER_EQUAL;}
-{LESS_EQUAL} {return TK_LESS_EQUAL;}
+{GREATER_EQUAL} { yylval.string_t = strdup(yytext); return TK_GREATER_EQUAL;}
+{LESS_EQUAL} { yylval.string_t = strdup(yytext); return TK_LESS_EQUAL;}
 {AND_EQUAL} {return TK_AND_EQUAL;}
 {MULT_EQUAL} {return TK_MULT_EQUAL;}
 {POT_EQUAL} {return TK_POT_EQUAL;}
