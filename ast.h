@@ -26,6 +26,8 @@ class Program{
         void enteringFor();
         void exitingFor();
         void writeFile();
+        void isDeclaration();
+        void isNotDeclaration();
 };
 
 class Declaration{
@@ -47,11 +49,12 @@ class Declaration{
         void evaluateReturn(int type);
         void evaluateBreak();
         void evaluateContinue();
-        void genCode(Code &code);
+        void genCode(string id, int type);
         void intDeclGenCode(int num);
         void floatDeclGenCode(float num);
         void boolDeclGenCode(int type);
         void stringDeclGenCode(string str);
+        void idDeclGenCode(string id, int type);
 
 };
 class Assignment{
@@ -91,7 +94,9 @@ class BinaryOp{
         int line;
         void evaluate();
         void evaluateBinaryOperator();
-        void genCode(Code &code);
+        void genCode(string sign);
+        void isBinaryOp();
+        void isNotBinaryOp();
 };
 
 class Arith{
@@ -129,7 +134,7 @@ class Function{
         void idNameGenCode(string name);
         void funcStackGenCode();
         void endFuncGenCode();
-        
+        void returnGenCode(int type);
 };
 class Parameter{
     public:
@@ -140,7 +145,7 @@ class Parameter{
         string name;
         int type;
         void addParameter();
-        void paramGenCode();
+        void paramGenCode(string id, int type);
 };
 class CalledParam{
     public:
@@ -177,4 +182,23 @@ class Array{
         void newArrayValue();
         void clearArrayValues();
         void genCode(Code &code);;
+};
+
+class Values{
+    public:
+        Values(int intValue, float floatValue, string stringValue){
+            this->intValue= intValue;
+            this->floatValue= floatValue;
+            this->stringValue= stringValue;
+        }
+        int intValue;
+        float floatValue;
+        string stringValue;
+        void addValue();
+};
+
+struct ValuesStruct{
+    int intValue;
+    float floatValue;
+    string stringValue;
 };
