@@ -19,6 +19,7 @@
 */
 map<string,Decl> variables;
 map<string, FunctionS> functions;
+map<string, ValuesStruct> valuesMap;
 list<Parameter> aux_params;
 list<Ids> ids;
 list<int> id_types;
@@ -33,7 +34,10 @@ int actualFuncType = 0;
 int inFor=false;
 int isArrayType= 0;
 int globalStackPointer = 0;
+int stackPointer = 4;
 int globalFileChars = 0;
+bool isDecl = false;
+bool isBinOp = false;
 string currentFuncName = "";
 string state = "";
 list<string> arithTmps;
@@ -157,12 +161,28 @@ string getNewLabel(string prefix){
     return ss.str();
 }
 
+
+
 class ContextStack{
     public:
         struct ContextStack* prev;
         map<string, Decl> variables;
 };
 
+class VariableInfo{
+    public:
+        VariableInfo(int offset, bool isArray, bool isParameter, int tp){
+            this->offset = offset;
+            this->isArray = isArray;
+            this->isParameter = isParameter;
+            this->tp = tp;
+        }
+        int offset;
+        bool isArray;
+        bool isParameter;
+        int tp;
+};
+map<string, VariableInfo *> codeGenerationVars;
 ContextStack * rootContext = NULL;
 bool searchVariable(string key, ContextStack* actual);
 Decl searchVariableType(string key, ContextStack *actual);
@@ -241,6 +261,14 @@ void Program::writeFile(){
         << generalCode << endl;
         file.close();
 }
+
+void Program::isDeclaration(){
+    isDecl = true;
+}
+
+void Program::isNotDeclaration(){
+    isDecl = false;
+}
 ///////////////////////////////////////////////////////////////////////////////////
 
 int Declaration::addDeclaration(){
@@ -269,6 +297,7 @@ int Declaration::addDeclaration(){
                     s.type = cont;
                     s.size = this->size;
                     rootContext->variables[id.name] = s;
+                    genCode(id.name, cont);
                     // cout<<"Variable '"<< id.name<< "' Linea: "<<this->line<<endl;
                 }
             }else{
@@ -292,6 +321,7 @@ int Declaration::addDeclaration(){
                     s.type = this->type;
                     s.size = this->size;  
                     rootContext->variables[id.name] = s;
+                    
                     // cout<<"Variable '"<< id.name<< "' Linea: "<<this->line<<endl;
                 }
             }else{
@@ -328,6 +358,7 @@ void Declaration::evaluateReturn(int type){
     }else if(type != actualFuncType){
         cout<<"Error: Tipo de return incompatible, Linea: "<<this->line<<endl;
     }
+    
 };
 
 void Declaration::evaluateBreak(){
@@ -342,11 +373,23 @@ void Declaration::evaluateContinue(){
     }
 };
 
+void Declaration::genCode(string id, int type){
+    stringstream code;
+    codeGenerationVars[id] = new VariableInfo(globalStackPointer, false, false, type);
+    globalStackPointer +=4;
+}
+
 void Declaration::intDeclGenCode(int num){
     stringstream ss;
     string tmp = getIntTemp();
     if(tmp!=""){
         ss<<"li "<<tmp<<", "<<num<<endl;
+        if (isDecl)
+        {
+            releaseIntTemp(tmp);
+            ss<<"sw "<< tmp <<", " << globalStackPointer<<"($sp)"<<endl;
+        }
+        
         generalCode+=ss.str();
     }
     arithTmps.push_back(tmp);
@@ -357,6 +400,11 @@ void Declaration::floatDeclGenCode(float num){
     string tmp = getFloatTemp();
     if(tmp!=""){
         ss<<"li.s "<<tmp<<", "<<num<<endl;
+        if (isDecl)
+        {
+            releaseIntTemp(tmp);
+            ss<<"s.s "<< tmp <<", " << globalStackPointer<<"($sp)"<<endl;
+        }
         generalCode+=ss.str();
     }
     arithTmps.push_back(tmp);
@@ -365,8 +413,15 @@ void Declaration::floatDeclGenCode(float num){
 void Declaration::boolDeclGenCode(int type){
     stringstream ss;
     string tmp = getIntTemp();
+
+    
     if(tmp!=""){
         ss<<"li "<<tmp<<", "<<type<<endl;
+        if (isDecl)
+        {
+            releaseIntTemp(tmp);
+            ss<<"sw "<< tmp <<", " << globalStackPointer<<"($sp)"<<endl;
+        }
         generalCode+=ss.str();
     }
     arithTmps.push_back(tmp);
@@ -385,6 +440,38 @@ void Declaration::stringDeclGenCode(string str){
     stringsMap[label] = str;
 }
 
+void Declaration::idDeclGenCode(string id, int type){
+    stringstream ss;
+    if(codeGenerationVars[id]->tp == 4 && !codeGenerationVars[id]->isArray){
+            string floatTemp = getFloatTemp();
+            // code.place = floatTemp;
+            
+            ss << "l.s " << floatTemp << ", " << to_string(codeGenerationVars[id]->offset) +"($sp)\n";
+            if (isDecl)
+            {
+                releaseFloatTemp(floatTemp);
+                ss<<"s.s "<< floatTemp <<", " << globalStackPointer<<"($sp)"<<endl;
+            }
+    }else if(codeGenerationVars[id]->tp == 3 && !codeGenerationVars[id]->isArray){
+            string intTemp = getIntTemp();
+            ss << "lw " << intTemp << ", " << to_string(codeGenerationVars[id]->offset) + "($sp)\n";
+            if (isDecl)
+            {
+                releaseIntTemp(intTemp);
+                ss<<"sw "<< intTemp <<", " << globalStackPointer<<"($sp)"<<endl;
+            }
+    }else if(codeGenerationVars[id]->tp == 2 && !codeGenerationVars[id]->isArray){
+            string intTemp = getIntTemp();
+            ss << "lw " << intTemp << ", " << to_string(codeGenerationVars[id]->offset) + "($sp)\n";
+            if (isDecl)
+            {
+                releaseIntTemp(intTemp);
+                ss<<"sw "<< intTemp <<", " << globalStackPointer<<"($sp)"<<endl;
+            }
+    }
+
+    generalCode += ss.str();
+}
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -520,6 +607,18 @@ void BinaryOp::evaluateBinaryOperator(){
     }
 }
 
+void BinaryOp::genCode(string sign){
+    //  string temp = getIntTemp();
+    //  cout << temp <<" reventuki"<< endl;
+}
+
+void BinaryOp::isBinaryOp(){
+    isBinOp = true;
+}
+
+void BinaryOp::isNotBinaryOp(){
+    isBinOp = false;
+}
 ///////////////////////////////////////////////////////////////////////////////////
 
 void Arith::addOp(int type){
@@ -916,6 +1015,52 @@ void Function::endFuncGenCode(){
     code << "\naddiu $sp, $sp, "<<currentStackPointer<<endl;
     code <<"jr $ra\n"<<endl;
     generalCode += code.str();
+    stackPointer = 4;
+}
+
+void Function::returnGenCode(int type){
+    stringstream ss;
+    auto search = valuesMap.find("value");
+    ValuesStruct v = search->second;
+    if (name != "")
+    {
+        if (type == 3 || type == 2)
+        {
+            string tmp = getIntTemp();
+            ss<<"lw "<< tmp << ", "<< codeGenerationVars[v.stringValue]->offset<<"($sp)"<<endl;
+            ss<<"move $v0, "<< tmp <<endl;
+        }else if(type == 4){
+            string tmp = getFloatTemp();
+            ss<<"l.s "<< tmp << ", "<< codeGenerationVars[v.stringValue]->offset<<"($sp)"<<endl;
+            ss<<"mfc1 $v0, "<< tmp <<endl;
+        }else if(type == 1){
+            string tmp = getArgsTemp();
+            ss<<"la "<< tmp << ", "<< codeGenerationVars[v.stringValue]->offset<<"($sp)"<<endl;
+            ss<<"move $v0, "<< tmp <<endl;
+        }
+        
+        generalCode += ss.str();
+    }else{
+        
+        if (type == 3 || type == 2)
+        {
+            string tmp = getIntTemp();
+            ss<<"li "<<tmp<<", "<<v.intValue<<endl;
+            ss<<"move $v0, "<< tmp <<endl;
+        }else if(type == 4){
+            string tmp = getFloatTemp();
+            ss<<"li.s "<<tmp<<", "<<v.floatValue<<endl;
+            ss<<"mfc1 $v0, "<< tmp <<endl;
+        }else if(type == 1){
+            string tmp = getArgsTemp();
+            ss<<"li "<<tmp<<", "<<v.stringValue<<endl;
+            ss<<"move $v0, "<< tmp <<endl;
+        }
+        valuesMap.clear();
+        generalCode += ss.str();
+    }
+    
+    clearIdList();
 }
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -941,12 +1086,14 @@ void Parameter::addParameter(){
     }
 };
 
-void Parameter::paramGenCode(){
+void Parameter::paramGenCode(string id, int type){
     stringstream code;
     if (cont_params < 4)
     {
         int currentParam = cont_params-1;
         code << "sw $a"<<currentParam<<", "<< globalStackPointer<<"($sp)"<<endl;
+        codeGenerationVars[id] = new VariableInfo(stackPointer, false, true, type);
+        stackPointer+=4;
         globalStackPointer+=4;
         generalCode+= code.str();
     }
@@ -1009,4 +1156,17 @@ void Array::newArrayValue(){
 
 void Array::clearArrayValues(){
     arrayValuesCont = 0;
+}
+
+////////////////////////////////////////////////////////////////////////
+
+void Values::addValue(){
+    string name = "value";
+    ValuesStruct tmp ;
+    tmp.intValue = this->intValue;
+    tmp.floatValue = this->floatValue;
+    tmp.stringValue = this->stringValue;
+    valuesMap[name] = tmp;
+
+
 }

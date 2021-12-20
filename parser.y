@@ -89,9 +89,11 @@ functions: function
 
 function: func_id TK_PAR_A params TK_PAR_C isArray n_types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($1, ($6+10), yylineno);
                                                                                                                    $$->addFunction();
+                                                                                                                   $$->funcStackGenCode();
                                                                                                                    $$->endFuncGenCode();}
         | func_id TK_PAR_A params TK_PAR_C n_types TK_LLAVE_A infunctions TK_LLAVE_C {$$= new Function($1, $5, yylineno);
-                                                                                          $$->addFunction();
+                                                                                          $$->addFunction();                  
+                                                                                          $$->funcStackGenCode();
                                                                                           $$->endFuncGenCode();
                                                                                     }
         ;
@@ -104,11 +106,12 @@ func_id:TK_FUNC TK_ID {$$= $2; Program *tmp = new Program(); tmp->ProgramPushCon
             ;
 n_types : types  { $$ = $1; Program *tmp = new Program(); tmp->saveFuncType(($1));
                   Function * f = new Function(" ", 0, 0);
-                  f->funcStackGenCode();
+                  // f->funcStackGenCode();
 }
         | /* E */{ $$ = 0;
                    Function * f = new Function(" ", 0, 0);
-                   f->funcStackGenCode();}
+                  //  f->funcStackGenCode();
+                   }
         ; 
 
 
@@ -130,17 +133,17 @@ params_no_empty: param
 
 param: TK_ID TK_BRACKET_A TK_BRACKET_C types {$$ = new Parameter($1 , ($4+10));
                                               $$->addParameter();
-                                              $$->paramGenCode();} 
+                                              $$->paramGenCode($1, $4+10);} 
      |TK_ID types {$$ = new Parameter($1 , $2);
                    $$->addParameter();
-                   $$->paramGenCode();}
+                   $$->paramGenCode($1, $2);}
      ;
 
 infunctions: /* E */
            | infunction infunctions 
            ;
 
-infunction:  declaration 
+infunction:  declaration {Program *p = new Program(); p->isNotDeclaration();}
           |  statement
           |  assignment
           |  comments
@@ -158,10 +161,13 @@ assignment: list_id TK_EQUAL list_assign_types  {$$ = new Assignment(yylineno); 
 
 breakers: TK_CONTINUE            {Declaration *tmp  = new Declaration(0,yylineno,false, 0); tmp->evaluateContinue();} 
         | TK_BREAK               {Declaration *tmp  = new Declaration(0,yylineno,false, 0); tmp->evaluateBreak();} 
-        | TK_RETURN assign_types {Declaration *tmp  = new Declaration(0,yylineno,false, 0); tmp->evaluateReturn($2);}
+        | TK_RETURN assign_types {Declaration *tmp  = new Declaration(0,yylineno,false, 0); tmp->evaluateReturn($2);
+                                  Function * f = new Function(" ", 0, 0);
+                                  f->returnGenCode($2);
+                                 }
         ;
 
-declaration: TK_VAR list_id types { $$ = new Declaration($3, yylineno, false , 0);
+declaration: TK_VAR  list_id types { $$ = new Declaration($3, yylineno, false , 0);
                                     $$->addDeclaration();
                                   }
            | TK_VAR list_id TK_EQUAL list_assign_types {
@@ -178,6 +184,7 @@ declaration: TK_VAR list_id types { $$ = new Declaration($3, yylineno, false , 0
            | call_function   {Function * tmp = new Function("",0,yylineno); tmp->evaluateCall($1);}
            | array           
            ;
+
 
 array: TK_VAR TK_ID array_type { 
                                  
@@ -211,8 +218,9 @@ list_assign_types: assign_types { Ids * tmp = new Ids("") ; tmp->addTypeToList($
 
                  ;
 
-list_id: TK_ID { $$ = new Ids($1); $$->addToList(); }
-       | TK_ID TK_COMA list_id { $$ = new Ids($1); $$->addToList(); }
+
+list_id: TK_ID { $$ = new Ids($1); $$->addToList();  Program *p = new Program(); p->isDeclaration();}
+       | TK_ID TK_COMA list_id { $$ = new Ids($1); $$->addToList(); Program *p = new Program(); p->isDeclaration();}
        ;
        
 
@@ -307,6 +315,8 @@ op: TK_LIT_INT { Decl * s = new Decl();
                 $$ = s;
                 Declaration *d = new Declaration(0,yylineno,false, 0);
                 d->intDeclGenCode($1);
+                Values *v = new Values($1,0,"");
+                v->addValue();
                }
   | TK_LIT_FLOAT {Decl * s = new Decl();
                   s-> type = 4;
@@ -316,6 +326,8 @@ op: TK_LIT_INT { Decl * s = new Decl();
                   $$ = s;
                   Declaration *d = new Declaration(0,yylineno,false, 0);
                   d->floatDeclGenCode($1);
+                  Values *v = new Values(0,$1,"");
+                  v->addValue();
                  }
   |TK_LIT_STRING {Decl * s = new Decl();
                   s-> type = 1;
@@ -325,15 +337,22 @@ op: TK_LIT_INT { Decl * s = new Decl();
                   $$ = s;
                   Declaration *d = new Declaration(0,yylineno,false, 0);
                   d->stringDeclGenCode($1);
+                  Values *v = new Values(0,0,$1);
+                  v->addValue();
                  }
   | TK_ID { Decl * s = new Decl();
           Ids  * tmp = new Ids($1);
+          
           s-> type = tmp->getType();
           Arith * tmp2 = new Arith(yylineno);
           tmp2->addOp(s->type);
          //  printf("valor del id: %d\n", tmp->getSize());
           s->size = s->type == 3 ? 3 : 0; 
           $$ = s;
+          Declaration *d = new Declaration(0,yylineno,false, 0);
+          d->idDeclGenCode($1, s->type);
+          Values *v = new Values(0,0,$1);
+          v->addValue();
   }
   | TK_TRUE {Decl * s = new Decl();
             s-> type = 2;
@@ -343,6 +362,8 @@ op: TK_LIT_INT { Decl * s = new Decl();
           $$ = s;
           Declaration *d = new Declaration(0,yylineno,false, 0);
           d->boolDeclGenCode(1);
+          Values *v = new Values(1,0,"");
+          v->addValue();
   }
   | TK_FALSE {Decl * s = new Decl();
               s-> type = 2;
@@ -352,6 +373,8 @@ op: TK_LIT_INT { Decl * s = new Decl();
               $$ = s;
               Declaration *d = new Declaration(0,yylineno,false, 0);
               d->boolDeclGenCode(0);
+              Values *v = new Values(0,0,"");
+              v->addValue();
   }
   
   | call_function {Decl * s = new Decl(); Function * tmp = new Function("",0,yylineno);  
@@ -432,9 +455,11 @@ params_call: /* */
 
 binary_operation: assign_types rel_operator assign_types { BinaryOp * tmp = new BinaryOp($1, $3, yylineno); 
                                                            tmp->evaluate();
+                                                           
                                                          }
-                | assign_types binary_operator assign_types { BinaryOp * tmp = new BinaryOp($1, $3, yylineno);
+                |  assign_types binary_operator assign_types { BinaryOp * tmp = new BinaryOp($1, $3, yylineno);
                                                               tmp->evaluateBinaryOperator();
+                                                              tmp->genCode($2);
                                                             }
                 ;
 

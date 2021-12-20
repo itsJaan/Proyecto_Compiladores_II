@@ -1,11 +1,10 @@
 package main
  
 import "fmt"
-func funcionH(hola int){
-   var str = "holamundo"
+func funcionH(){
+   var h = 1
 }
 
 func main() {
-   var size = 2.5 + 5.0 * 10
-   var boolEx = true
+   var size = 2
 }
